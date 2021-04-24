@@ -1,0 +1,31 @@
+{
+  "limitOfComplexity": 7,
+  "extends" : [
+    {
+      "file": "utils.js",
+      "extend": -2
+    }
+  ],
+  "rules": [
+    {
+      "metric": "IF_STATEMENTS",
+      "cost": 1
+    },
+    {
+      "metric": "CYCLOMATIC_COUPLING",
+      "cost": 3
+    },
+    {
+      "metric": "METHODS",
+      "cost": 1
+    },
+    {
+      "metric": "LAMBDA_EXPRESSIONS",
+      "cost": 1
+    },
+    {
+      "metric": "LAMBDA_EXPRESSION",
+      "cost": 2
+    }
+  ]
+}

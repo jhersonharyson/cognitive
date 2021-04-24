@@ -1,0 +1,120 @@
+<idea-plugin>
+    <id>org.example.teste_plugin</id>
+    <name>Plugin display name here</name>
+    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+
+    <description></description>
+
+    <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+
+    <projectListeners>
+<!--        <listener class="com.example.demo.listener.MyListenerClass"-->
+<!--                  topic="com.intellij.openapi.vfs.VirtualFileManagerListener"/>-->
+    </projectListeners>
+
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <notification.parentGroup
+                id="demo.notifications"
+                title="Demo notifications"/>
+
+        <notification.group
+                parentId="demo.notifications"
+                groupId="demo.notifications.stickyBalloon"/>
+
+
+        <actionPromoter implementation="com.example.demo.promoter.MyPromotor"/>
+<!--        <virtualFileManagerListener implementation="com.example.demo.listener.MyListenerClass" />-->
+        <vfs.asyncListener implementation="com.example.demo.listener.MyListenerClass" />
+<!--        <fileEditorProvider implementation="com.example.demo.editor.EditorProvider" />-->
+        <fileContextProvider implementation="com.example.demo.fileContext.MyFileContext" />
+<!--        <fileBasedIndex implementation="com.example.demo.basedIndex.MyFileBasedIndex" />-->
+        <editorFileSwapper implementation="com.example.demo.fileSwapper.MyFileSwapper" />
+        <editorNavigation implementation="com.example.demo.navigation.MyNavigation" />
+        <editorFileAssociateFinder implementation="com.example.demo.fileAssociate.MyFileAssociate" />
+<!--        <editorActionHandler action="" implementationClass="" />-->
+
+
+        <projectService serviceInterface="com.example.demo.service.MyProjectService"
+                        serviceImplementation="com.example.demo.service.MyProjectServiceImpl" />
+
+        <!-- Add your extensions here -->
+<!--        <notificationGroup id="Custom Notification Group" displayType="BALLOON" key="notification.group.name"/>-->
+        <applicationService serviceImplementation="com.example.demo.MyIdeaDemoPluginSettings"/>
+        <codeInsight.inlayProvider language="JAVA" implementationClass="com.example.demo.hints.HintProvider"/>
+<!--            <treeStructureProvider implementation="com.example.demo.treeStructureProvider.TextOnlyTreeStructureProvider"/>-->
+<!--        <projectViewPane implementation="com.example.demo.viewPane.ImagesProjectViewPane"/>-->
+            <toolWindow id="Cognite" secondary="true" icon="AllIcons.General.Modified" anchor="right"
+                        factoryClass="com.example.demo.toolWindow.MyToolWindowFactory"/>
+
+        <checkinHandlerFactory implementation="com.example.demo.checkingHandler.MyCheckingHandlerFactory"/>
+
+<!--        <localInspection language="JAVA"-->
+<!--                         displayName="SDK: '==' or '!=' used instead of 'equals()'"-->
+<!--                         groupPath="Java"-->
+<!--                         groupBundle="messages.InspectionsBundle"-->
+<!--                         groupKey="group.names.probable.bugs"-->
+<!--                         enabledByDefault="true"-->
+<!--                         level="WARNING"-->
+<!--                         implementationClass="com.example.demo.codeInspection.ComparingReferencesInspection"/>-->
+    </extensions>
+
+
+    <actions>
+        <action id="Plugin.Test" class="com.example.demo.promoter.MyChangeFileAction" />
+
+        <!-- Add your actions here -->
+<!--        <group id="MyIdeaDemo.HelloAction" text="MyIdeaDemo" description="About my idea">-->
+<!--            <add-to-group group-id="MainMenu" anchor="last"/>-->
+<!--            <action class="com.example.demo.HelloAction" id="MyIdeaDemo.Actions.HelloAction" text="Say Hello" />-->
+<!--            <separator/>-->
+<!--        </group>-->
+
+<!--        <action class="com.example.demo.HelloAction" id="PsiNavigationDemo"-->
+<!--                text="PSI Navigation Demo...">-->
+<!--            <add-to-group group-id="ToolsMenu" anchor="last"/>-->
+<!--        </action>-->
+
+
+
+
+<!--        <action id="ProjectModel.SourceRoots" class="com.example.demo.projectModel.ShowSourceRootsActions"-->
+<!--                text="Show Source Roots"-->
+<!--                description="Illustrates how to get source roots"-->
+<!--                >-->
+<!--            <add-to-group group-id="ToolsMenu" anchor="first"/>-->
+<!--        </action>-->
+<!--        <action id="ProjectModel.ProjectSdk" class="com.example.demo.projectModel.ProjectSdkAction"-->
+<!--                text="Show Sdk Info"-->
+<!--                description="Illustrates how to get Sdk info"-->
+<!--                >-->
+<!--            <add-to-group group-id="ToolsMenu" anchor="after" relative-to-action="ProjectModel.SourceRoots"/>-->
+<!--        </action>-->
+<!--        -->
+
+<!--        <action id="ProjectModel.ProjectFileIndex"-->
+<!--                class="com.example.demo.projectModel.ProjectFileIndexSampleAction"-->
+<!--                text="FileProjectIndex in Action"-->
+<!--                description="Illustrates how to get source roots"-->
+<!--                >-->
+<!--            <add-to-group group-id="EditorPopupMenu" anchor="last"/>-->
+<!--        </action>-->
+<!--        <action id="ProjectModel.ModificationAction" class="com.example.demo.projectModel.ModificationAction"-->
+<!--                text="Project Modification in Action"-->
+<!--                description="Illustrates how to get source roots"-->
+<!--                >-->
+<!--            <add-to-group group-id="EditorPopupMenu" anchor="last"/>-->
+<!--        </action>-->
+<!--        <action id="ProjectModel.LibrariesAction" class="com.example.demo.projectModel.LibrariesAction"-->
+<!--                text="Libraries for File"-->
+<!--                description="Illustrates accessing libraries"-->
+<!--                >-->
+<!--            <add-to-group group-id="EditorPopupMenu" anchor="last"/>-->
+<!--        </action>-->
+
+    </actions>
+</idea-plugin>
