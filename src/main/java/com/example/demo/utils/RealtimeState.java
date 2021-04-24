@@ -19,11 +19,17 @@ public class RealtimeState {
                     NotificationDisplayType.STICKY_BALLOON, true);
 
     private static RealtimeState realtimeState;
-    private int currentComplexity;
-    private int lastComplexity = -1;
-    private int limitOfComplexity;
-    private VirtualFile file;
     private RealtimeLambdaState listener;
+    private VirtualFile file;
+
+    private int currentComplexity = 0;
+    private int lastComplexity = -1;
+    private int limitOfComplexity = 0;
+    private boolean showComplexityInTheCode = true;
+    private boolean limitExceededNotification = true;
+
+
+
 
     private RealtimeState() {
         ProjectManager.getInstance().getDefaultProject().getMessageBus().connect().subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
@@ -88,5 +94,21 @@ public class RealtimeState {
         if (this.limitOfComplexity > 0 && this.currentComplexity >= this.limitOfComplexity) {
             ClientNotification.getInstance().notify(this.currentComplexity, this.limitOfComplexity);
         }
+    }
+
+    public boolean isShowComplexityInTheCode() {
+        return showComplexityInTheCode;
+    }
+
+    public void setShowComplexityInTheCode(boolean showComplexityInTheCode) {
+        this.showComplexityInTheCode = showComplexityInTheCode;
+    }
+
+    public boolean isLimitExceededNotification() {
+        return limitExceededNotification;
+    }
+
+    public void setLimitExceededNotification(boolean limitExceededNotification) {
+        this.limitExceededNotification = limitExceededNotification;
     }
 }
