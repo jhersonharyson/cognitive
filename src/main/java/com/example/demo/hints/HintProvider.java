@@ -290,3 +290,4 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         return language.getID().equals("JAVA");
     }
 }
+

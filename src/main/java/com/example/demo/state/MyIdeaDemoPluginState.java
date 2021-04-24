@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.state;
 
 import com.intellij.openapi.components.PersistentStateComponent;
 

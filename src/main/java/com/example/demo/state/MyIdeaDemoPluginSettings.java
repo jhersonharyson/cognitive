@@ -1,4 +1,4 @@
-package com.example.demo.hints2;
+package com.example.demo.state;
 
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ServiceManager;
