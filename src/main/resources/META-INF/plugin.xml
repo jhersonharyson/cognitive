@@ -23,6 +23,7 @@
         <codeInsight.inlayProvider language="JAVA" implementationClass="com.example.demo.hints.HintProvider"/>
         <toolWindow id="Cognite" secondary="true" icon="AllIcons.General.Modified" anchor="right"
                     factoryClass="com.example.demo.toolWindow.MyToolWindowFactory"/>
+        <treeStructureProvider implementation="com.example.demo.treeStructureProvider.MyTreeStructureProvider"/>
 
     </extensions>
 
