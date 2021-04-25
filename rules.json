@@ -1,6 +1,6 @@
 {
   "limitOfComplexity": 7,
-  "extends" : [
+  "metricsExtends": [
     {
       "file": "utils.js",
       "extend": -2
@@ -8,24 +8,20 @@
   ],
   "rules": [
     {
-      "metric": "IF_STATEMENTS",
+      "name": "IF_STATEMENT",
       "cost": 1
     },
     {
-      "metric": "CYCLOMATIC_COUPLING",
+      "name": "TRY_STATEMENT",
+      "cost": 1
+    },
+    {
+      "name": "ANNOTATION",
+      "cost": 7
+    },
+    {
+      "name": "FOR_STATEMENT",
       "cost": 3
-    },
-    {
-      "metric": "METHODS",
-      "cost": 1
-    },
-    {
-      "metric": "LAMBDA_EXPRESSIONS",
-      "cost": 1
-    },
-    {
-      "metric": "LAMBDA_EXPRESSION",
-      "cost": 2
     }
   ]
 }
