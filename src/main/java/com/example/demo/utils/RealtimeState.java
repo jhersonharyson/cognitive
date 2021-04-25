@@ -1,6 +1,7 @@
 package com.example.demo.utils;
 
 
+import com.cdd.service.Analyzer;
 import com.cdd.service.ClientNotification;
 import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
@@ -9,6 +10,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
+import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -27,8 +29,6 @@ public class RealtimeState {
     private int limitOfComplexity = 0;
     private boolean showComplexityInTheCode = true;
     private boolean limitExceededNotification = true;
-
-
 
 
     private RealtimeState() {
@@ -63,6 +63,19 @@ public class RealtimeState {
     public void setFile(VirtualFile file) {
         this.file = file;
         this.update(this.currentComplexity, this.limitOfComplexity, file);
+    }
+
+    public void updateState(int currentComplexity, int limitOfComplexity, VirtualFile file) {
+        this.setCurrentComplexity(currentComplexity);
+        this.setLimitOfComplexity(limitOfComplexity);
+        this.setFile(file);
+    }
+
+    public void updateStateByFile(VirtualFile file) {
+        var complexityCounter = new Analyzer().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file));
+        var currentComplexity = complexityCounter.compute();
+        var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
+        this.updateState(currentComplexity, limitOfComplexity, file);
     }
 
     public int getCurrentComplexity() {

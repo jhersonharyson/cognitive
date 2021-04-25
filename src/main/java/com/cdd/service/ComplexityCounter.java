@@ -12,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ComplexityCounter extends JavaRecursiveElementVisitor {
     HashMap<Statement, Integer> statements = new HashMap<>();
@@ -54,8 +56,6 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
     }
 
     public int count() {
-
-
         return (numberOfIfStatement + numberOfMethods + numberOfBlockStatements + numberOfCodeBlocks +
                 numberOfCatchSections + numberOfTypeCastExpression + numberOfWhileStatements +
                 numberOfAnnotationMethods + numberOfTryStatements + numberOfLambdaExpression +
@@ -66,24 +66,35 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
     }
 
     public int compute() {
-        CddMetrics cdd = new CddMetrics();
-
         if (resource == null) {
             // TODO: Error alert
             return 0;
         }
 
-        RealtimeState.getInstance().setLimitOfComplexity(this.resource.limitOfComplexity());
-        cdd.setLimitOfComplexity(this.resource.limitOfComplexity());
-        cdd.setRules(new ComplexityMetricsService().getRules(this.resource.loadMetrics()));
-
-        return cdd.getRules().stream().reduce(0, (subtotal, rule) -> subtotal + (rule.getCost() * this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0)), Integer::sum);
-
+        var metrics = this.getMetrics();
+        RealtimeState.getInstance().setLimitOfComplexity(metrics.getLimitOfComplexity());
+        return metrics.getRules().stream().reduce(0, (subtotal, rule) -> subtotal + (rule.getCost() * this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0)), Integer::sum);
     }
 
-    private int computeCost(Statement statement) {
-        return 0;
+    public CddMetrics getMetrics(){
+        CddMetrics metrics = new CddMetrics();
+        metrics.setLimitOfComplexity(this.resource.limitOfComplexity());
+        metrics.setRules(new ComplexityMetricsService().getRules(this.resource.loadMetrics()));
+        return metrics;
     }
+
+    public Set<Rule> getRules() {
+        if (resource == null) {
+            // TODO: Error alert
+            return null;
+        }
+
+        return new ComplexityMetricsService().getRules(this.resource.loadMetrics()).stream().map(rule -> {
+           rule.setTimes(this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0));
+           return rule;
+        }).collect(Collectors.toSet());
+    }
+
 
     @Override
     public void visitElement(@NotNull PsiElement element) {
