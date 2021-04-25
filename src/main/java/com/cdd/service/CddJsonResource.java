@@ -23,8 +23,12 @@ public class CddJsonResource implements CddResource {
             "      \"cost\": 1\n" +
             "    },\n" +
             "    {\n" +
-            "      \"name\": \"BLOCK_STATEMENT\",\n" +
+            "      \"name\": \"TRY_STATEMENT\",\n" +
             "      \"cost\": 1\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"name\": \"ANNOTATION\",\n" +
+            "      \"cost\": 7\n" +
             "    },\n" +
             "    {\n" +
             "      \"name\": \"FOR_STATEMENT\",\n" +

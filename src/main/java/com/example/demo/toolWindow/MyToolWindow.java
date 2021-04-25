@@ -8,13 +8,17 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.ui.Gray;
+import com.intellij.ui.JBColor;
+import com.intellij.util.NotNullProducer;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.Arrays;
 
 public class MyToolWindow {
 
-    public VirtualFile classAnalised;
+    public VirtualFile classAnalysed;
 
 
     private JPanel myToolWindowContent;
@@ -44,9 +48,19 @@ public class MyToolWindow {
 
     private void configureActions(Project project) {
         this.configureChooseAnotherClassAction(project);
+        this.configureOpenRulesAction();
         this.configureShowComplexityInTheCodeAction();
         this.configureLimitExceededNotificationAction();
     }
+
+    private void configureOpenRulesAction() {
+
+        this.openRulesButton.addActionListener(e -> new RulesWindow());
+
+    }
+
+
+
 
     private void configureShowComplexityInTheCodeAction() {
         this.showComplexityInTheCodeCheckBox.addActionListener(e -> {
@@ -72,8 +86,8 @@ public class MyToolWindow {
                 VirtualFile file = classChooser.getSelectedFile().getContainingFile().getVirtualFile();
 
                 var fileOptional = Arrays.stream(FileEditorManager.getInstance(project).getOpenFiles()).findFirst();
-                this.classAnalised = file; //fileOptional.orElseThrow();
-                this.className.setText(this.classAnalised.getName());
+                this.classAnalysed = file; //fileOptional.orElseThrow();
+                this.className.setText(this.classAnalysed.getName());
                 FileEditorManager.getInstance(project).openTextEditor(new OpenFileDescriptor(project, file).setUseCurrentWindow(true), false);
                 RealtimeState.getInstance().setFile(file);
             }
@@ -86,22 +100,31 @@ public class MyToolWindow {
             @Override
             public Object applyLimitOfComplexity(int complexity) {
                 limitOfComplexity.setText(String.valueOf(complexity));
+                updateColors();
                 return null;
             }
 
             @Override
             public Object applyCurrentComplexity(int complexity) {
                 currentComplexity.setText(String.valueOf(complexity));
+                updateColors();
                 return null;
             }
 
             @Override
             public Object applyCurrentClass(VirtualFile filename) {
-                if (filename != null)
+                if (filename != null) {
                     className.setText(filename.getName());
+                    updateColors();
+                }
                 return null;
             }
         });
+    }
+
+    private void updateColors(){
+        var color = RealtimeState.getInstance().getCurrentComplexity() >= RealtimeState.getInstance().getLimitOfComplexity() ? new Color(186,111,37) : new Color(88, 157, 246);
+        this.className.setForeground(color);
     }
 
 

@@ -1,7 +1,10 @@
 package com.example.demo.hints;
 
 
+import com.cdd.model.Rule;
 import com.cdd.service.Analyzer;
+import com.cdd.service.CddJsonResource;
+import com.cdd.service.ComplexityMetricsService;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
 import com.intellij.codeInsight.daemon.impl.MarkerType;
@@ -32,15 +35,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.text.MessageFormat;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
+
+import static io.grpc.internal.ConscryptLoader.isPresent;
 
 @SuppressWarnings("UnstableApiUsage")
 public class HintProvider implements InlayHintsProvider<HintSettings> {
     private static final SettingsKey<HintSettings> KEY = new SettingsKey<>("JavaLens");
-
-    private int numberOfComplexity = 0;
 
     @Override
     public boolean isVisibleInSettings() {
@@ -107,18 +109,23 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                                                         @NotNull PsiElement element,
                                                         @NotNull Editor editor,
                                                         @NotNull InlResult result) {
+        // <-------------------- ICON ------------------->
         //Icon icon = AllIcons.Toolwindows.ToolWindowFind;
         //Icon icon = IconLoader.getIcon("/toolwindows/toolWindowFind_dark.svg", AllIcons.class);
 
-        InlayPresentation text = factory.smallText(result.getRegularText());
 
-        return factory.changeOnHover(text, () -> {
-            InlayPresentation onClick = factory.onClick(text, MouseButton.Left, (___, __) -> {
-                result.onClick(editor, element);
-                return null;
-            });
-            return referenceColor(onClick);
-        }, __ -> true);
+        // <-------------------- HOVER ------------------->
+        //        InlayPresentation text = factory.smallText(result.getRegularText());
+        //        return factory.changeOnHover(text, () -> {
+        //            InlayPresentation onClick = factory.onClick(text, MouseButton.Left, (___, __) -> {
+        //                result.onClick(editor, element);
+        //                return null;
+        //            });
+        //            return referenceColor(onClick);
+        //        }, __ -> true);
+
+
+        return factory.smallText(result.getRegularText());
     }
 
     @NotNull
@@ -142,114 +149,40 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
         RealtimeState.getInstance().setFile(file.getVirtualFile());
 
-        RealtimeState.getInstance().setCurrentComplexity(new Analyzer().readPsiFile(file).compute());
-
         PresentationFactory factory = new PresentationFactory((EditorImpl) editor);
+
+        Set<Rule> rules = new ComplexityMetricsService().getRules(new CddJsonResource().loadMetrics());
 
         return (element, editor1, sink) -> {
 
-            if (!(element instanceof PsiMember || element instanceof PsiIfStatement) || element instanceof PsiTypeParameter)
+            if (!RealtimeState.getInstance().isShowComplexityInTheCode())
                 return true;
 
-            PsiMember member = null;
-            PsiIfStatement statement = null;
 
-            if (element instanceof PsiIfStatement) {
-                statement = (PsiIfStatement) element;
-            }
-
-            if (element instanceof PsiMember) {
-                member = (PsiMember) element;
-            }
-
-
-            if (member != null && Objects.requireNonNull(member).getName() == null) return true;
-            if (statement != null && Objects.requireNonNull(statement).getText() == null) return true;
+            if (!this.verifyElementType(rules, element))
+                return true;
 
 
             List<InlResult> hints = new SmartList<>();
 
-            if (element instanceof PsiMember/*settings.isShowUsages()*/) {
-                String usagesHint = JavaTelescope.usagesHint(member, file);
-                if (usagesHint != null) {
-                    hints.add(new InlResult() {
-                        @Override
-                        public void onClick(@NotNull Editor editor, @NotNull PsiElement element) {
-                            GotoDeclarationAction.startFindUsages(editor, file.getProject(), element);
-                        }
 
-                        @NotNull
-                        @Override
-                        public String getRegularText() {
-                            return usagesHint;
-                        }
-                    });
-                }
-            }
-            if (element instanceof PsiMember/*settings.isShowImplementations()*/) {
-                if (element instanceof PsiClass) {
-                    int inheritors = JavaTelescope.collectInheritingClasses((PsiClass) element);
-                    if (inheritors != 0) {
-                        hints.add(new InlResult() {
-                            @Override
-                            public void onClick(@NotNull Editor editor, @NotNull PsiElement element) {
-                                Point point = JBPopupFactory.getInstance().guessBestPopupLocation(editor).getScreenPoint();
-                                MouseEvent event = new MouseEvent(new JLabel(), 0, 0, 0, point.x, point.y, 0, false);
-                                GutterIconNavigationHandler<PsiElement> navigationHandler = MarkerType.SUBCLASSED_CLASS.getNavigationHandler();
-                                navigationHandler.navigate(event, ((PsiClass) element).getNameIdentifier());
-                            }
-
-                            @NotNull
-                            @Override
-                            public String getRegularText() {
-                                String prop = "{0, choice, 1#1 Implementation|2#{0,number} Implementations}";
-                                return MessageFormat.format(prop, inheritors);
-                            }
-                        });
-                    }
-                }
-                if (element instanceof PsiMethod) {
-                    int overridings = JavaTelescope.collectOverridingMethods((PsiMethod) element);
-                    if (overridings != 0) {
-                        hints.add(new InlResult() {
-                            @Override
-                            public void onClick(@NotNull Editor editor, @NotNull PsiElement element) {
-                                Point point = JBPopupFactory.getInstance().guessBestPopupLocation(editor).getScreenPoint();
-                                MouseEvent event = new MouseEvent(new JLabel(), 0, 0, 0, point.x, point.y, 0, false);
-                                GutterIconNavigationHandler<PsiElement> navigationHandler = MarkerType.OVERRIDDEN_METHOD.getNavigationHandler();
-                                navigationHandler.navigate(event, ((PsiMethod) element).getNameIdentifier());
-                            }
-
-                            @NotNull
-                            @Override
-                            public String getRegularText() {
-                                String prop = "{0, choice, 1#1 Implementation|2#{0,number} Implementations}";
-                                return MessageFormat.format(prop, overridings);
-                            }
-                        });
-                    }
-                }
-            }
-            if (element instanceof PsiIfStatement) {
-                hints.add(new InlResult() {
-                    @Override
-                    public void onClick(@NotNull Editor editor, @NotNull PsiElement element) {
-                        Point point = JBPopupFactory.getInstance().guessBestPopupLocation(editor).getScreenPoint();
-                        MouseEvent event = new MouseEvent(new JLabel(), 0, 0, 0, point.x, point.y, 0, false);
+            hints.add(new InlResult() {
+                @Override
+                public void onClick(@NotNull Editor editor, @NotNull PsiElement element) {
+                    Point point = JBPopupFactory.getInstance().guessBestPopupLocation(editor).getScreenPoint();
+                    MouseEvent event = new MouseEvent(new JLabel(), 0, 0, 0, point.x, point.y, 0, false);
 //                            GutterIconNavigationHandler<PsiElement> navigationHandler = MarkerType..getNavigationHandler();
 //                            navigationHandler.navigate(event, ((PsiMethod) element).getNameIdentifier());
-                    }
+                }
 
-                    @NotNull
-                    @Override
-                    public String getRegularText() {
-//                        RealtimeState.getInstance().setCurrentComplexity(numberOfComplexity);
-                        String prop = "{0, choice, 1#// 1 Complexity|2#// {0,number} Complexity}";
-                        return MessageFormat.format(prop, ++numberOfComplexity);
-                    }
-                });
+                @NotNull
+                @Override
+                public String getRegularText() {
+                    String prop = "{0, choice, 1#// 1 Complexity|2#// {0,number} Complexity}";
+                    return MessageFormat.format(prop, Objects.requireNonNull(rules.stream().filter(rule -> isInstanceOf(rule, element)).findAny().orElse(null)).getCost());
+                }
+            });
 
-            }
 
             if (!hints.isEmpty()) {
                 int offset = element.getTextRange().getStartOffset();
@@ -272,13 +205,18 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 Icon icon = AllIcons.Actions.MoveDown;
 
                 InlayPresentation seq = factory.seq(presentations);
-                InlayPresentation withAppearingSettings = factory.changeOnHover(seq, () -> {
-                    InlayPresentation[] trimmedSpace = Arrays.copyOf(presentations, presentations.length - 1);
-                    InlayPresentation[] spaceAndSettings = {factory.textSpacePlaceholder(1, false), factory.icon(icon)};
-                    InlayPresentation[] withSettings = ArrayUtil.mergeArrays(trimmedSpace, spaceAndSettings);
-                    return factory.seq(withSettings);
-                }, e -> true);
-                sink.addBlockElement(lineStart, true, true, 0, withAppearingSettings);
+
+//                <----------------- HOVER -------------------->
+//                InlayPresentation withAppearingSettings = factory.changeOnHover(seq, () -> {
+//                    InlayPresentation[] trimmedSpace = Arrays.copyOf(presentations, presentations.length - 1);
+//                    InlayPresentation[] spaceAndSettings = {factory.textSpacePlaceholder(1, false), factory.icon(icon)};
+//                    InlayPresentation[] withSettings = ArrayUtil.mergeArrays(trimmedSpace, spaceAndSettings);
+//                    return factory.seq(withSettings);
+//                }, e -> true);
+//
+//                sink.addBlockElement(lineStart, true, true, 0, withAppearingSettings);
+
+                sink.addBlockElement(lineStart, true, true, 0, seq);
             }
             return true;
         };
@@ -286,8 +224,16 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
     @Override
     public boolean isLanguageSupported(@NotNull Language language) {
-        this.numberOfComplexity = 0;
         return language.getID().equals("JAVA");
     }
+
+    private boolean verifyElementType(Set<Rule> rules, Object element) {
+        return rules.stream().anyMatch(rule -> this.isInstanceOf(rule, element));
+    }
+
+    private boolean isInstanceOf(Rule rule, Object element) {
+        return ((Class) rule.getObject()).isInstance(element);
+    }
+
 }
 
