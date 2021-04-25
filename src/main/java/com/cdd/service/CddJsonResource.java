@@ -4,6 +4,9 @@ import com.cdd.model.CddMetrics;
 import com.cdd.model.Rule;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.psi.PsiManager;
 
 import java.util.Objects;
 import java.util.Set;
@@ -36,6 +39,7 @@ public class CddJsonResource implements CddResource {
             "    }\n" +
             "  ]\n" +
             "}";
+    final private String RULES_FILE = "/rules.json";
 
     @Override
     public Set<Rule> loadMetrics() {
@@ -51,12 +55,25 @@ public class CddJsonResource implements CddResource {
 
         CddMetrics obj = null;
         try {
-            obj = mapper.readValue(this.jsonString, CddMetrics.class);
+            obj = mapper.readValue(this.getJson(), CddMetrics.class);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
         return Objects.requireNonNull(obj);
+    }
+
+    private String getJson(){
+        try{
+            var url = (ProjectManager.getInstance().getOpenProjects()[0].getBasePath() + RULES_FILE);
+            var file = LocalFileSystem.getInstance().findFileByPath(url);
+            if(file == null)
+                return "{}";
+            return Objects.requireNonNull(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file)).getText();
+        }catch (Exception e){
+            return "{}";
+        }
+
     }
 
 }
