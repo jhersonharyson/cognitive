@@ -147,7 +147,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                                                @NotNull InlayHintsSink inlayHintsSink) {
 //        return new HintCollector();
 
-        RealtimeState.getInstance().setFile(file.getVirtualFile());
+        RealtimeState.getInstance().updateStateByFile(file.getVirtualFile());
 
         PresentationFactory factory = new PresentationFactory((EditorImpl) editor);
 
