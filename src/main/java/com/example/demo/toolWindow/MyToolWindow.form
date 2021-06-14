@@ -30,7 +30,7 @@
                 </constraints>
                 <properties>
                   <font size="16" style="1"/>
-                  <text value="Analises"/>
+                  <text value="Analysis Report"/>
                 </properties>
               </component>
               <component id="fe9e9" class="javax.swing.JSeparator">
@@ -57,7 +57,7 @@
             </constraints>
             <properties>
               <font size="16" style="1"/>
-              <text value="Cognitive Driven Development"/>
+              <text value="Cognitive-Driven Development (CDD)"/>
             </properties>
           </component>
           <grid id="a5466" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -220,7 +220,7 @@
             </constraints>
             <properties>
               <foreground color="-6710887"/>
-              <text value="Current complexity:"/>
+              <text value="Current cognitive complexity"/>
             </properties>
           </component>
           <grid id="1f7cd" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -259,7 +259,7 @@
             </constraints>
             <properties>
               <foreground color="-6710887"/>
-              <text value="Limit of complexity:"/>
+              <text value="Limit of complexity"/>
             </properties>
           </component>
           <grid id="55056" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -309,7 +309,7 @@
             <properties>
               <foreground color="-6710887"/>
               <selected value="false"/>
-              <text value="Show complexity in the code"/>
+              <text value="Show cognitive complexity points"/>
             </properties>
           </component>
         </children>

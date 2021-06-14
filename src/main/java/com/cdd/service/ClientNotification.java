@@ -40,7 +40,7 @@ public class ClientNotification {
             if(this.notification != null)
                 this.notification.expire();
 
-            this.notification = new Notification("Plugins Suggestion", "<span style='font-size: 12px;'>CDD Limit exceeded</span>", "<strong> <span style='color: #BA6F25;'>" + currentComplexity + "</span> of cognitive load, the limit is " + limitOfComplexity + "</strong><br /><strong>It's time to refactor your code.</strong>", NotificationType.ERROR);
+            this.notification = new Notification("Plugins Suggestion", "<span style='font-size: 12px;'>Cognitive load limit was exceeded</span>", "<strong>Current cognitive load is <span style='color: #BA6F25;'>" + currentComplexity + "</span> and the limit allowed in this project is  <span style='color: #589DF6;'>" + limitOfComplexity + "</span> </strong><br /><strong>It's time to restructure your code.</strong>", NotificationType.ERROR);
             this.notification.addAction(new NotificationAction.Simple(() -> "Open rules", (anActionEvent, notification1) -> {
             }, ""));
 

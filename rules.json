@@ -1,27 +1,17 @@
 {
-  "limitOfComplexity": 7,
-  "metricsExtends": [
-    {
-      "file": "utils.js",
-      "extend": -2
-    }
-  ],
+  "limitOfComplexity": 14,
   "rules": [
     {
       "name": "IF_STATEMENT",
       "cost": 1
     },
     {
-      "name": "TRY_STATEMENT",
-      "cost": 1
-    },
-    {
       "name": "ANNOTATION",
-      "cost": 7
+      "cost": 2
     },
     {
       "name": "FOR_STATEMENT",
-      "cost": 3
+      "cost": 1
     }
   ]
 }

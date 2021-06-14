@@ -3,8 +3,15 @@ package com.example.demo.utils;
 
 import com.cdd.service.Analyzer;
 import com.cdd.service.ClientNotification;
+import com.intellij.codeInsight.CodeInsightUtil;
+import com.intellij.codeInsight.actions.CodeInsightAction;
+import com.intellij.codeInsight.hints.InlayHintsUtils;
+import com.intellij.configurationStore.SaveAndSyncHandlerImpl;
 import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.FileEditorState;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -13,6 +20,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class RealtimeState {
@@ -115,6 +123,9 @@ public class RealtimeState {
 
     public void setShowComplexityInTheCode(boolean showComplexityInTheCode) {
         this.showComplexityInTheCode = showComplexityInTheCode;
+        Arrays.stream(FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles()).forEach( f -> {
+            FileDocumentManager.getInstance().reloadFiles(f);
+        });
     }
 
     public boolean isLimitExceededNotification() {

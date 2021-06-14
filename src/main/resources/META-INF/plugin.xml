@@ -21,10 +21,10 @@
         <editorFileAssociateFinder implementation="com.example.demo.fileAssociate.MyFileAssociate" />
         <applicationService serviceImplementation="com.example.demo.state.MyIdeaDemoPluginSettings"/>
         <codeInsight.inlayProvider language="JAVA" implementationClass="com.example.demo.hints.HintProvider"/>
-        <toolWindow id="Cognite" secondary="true" icon="AllIcons.General.Modified" anchor="right"
+        <toolWindow id="Cognitive Load Analyzer" secondary="true" icon="AllIcons.General.Modified" anchor="right"
                     factoryClass="com.example.demo.toolWindow.MyToolWindowFactory"/>
-        <treeStructureProvider implementation="com.example.demo.treeStructureProvider.MyTreeStructureProvider"/>
-
+<!--        <treeStructureProvider implementation="com.example.demo.treeStructureProvider.MyTreeStructureProvider"/>-->
+        <projectViewNodeDecorator implementation="com.example.demo.projectViewWatchDecorator.ProjectViewWatchDecorator"/>
     </extensions>
 
 

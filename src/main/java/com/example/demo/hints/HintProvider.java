@@ -114,15 +114,15 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         //Icon icon = IconLoader.getIcon("/toolwindows/toolWindowFind_dark.svg", AllIcons.class);
 
 
-        // <-------------------- HOVER ------------------->
-        //        InlayPresentation text = factory.smallText(result.getRegularText());
-        //        return factory.changeOnHover(text, () -> {
-        //            InlayPresentation onClick = factory.onClick(text, MouseButton.Left, (___, __) -> {
-        //                result.onClick(editor, element);
-        //                return null;
-        //            });
-        //            return referenceColor(onClick);
-        //        }, __ -> true);
+//         <-------------------- HOVER ------------------->
+//                InlayPresentation text = factory.smallText(result.getRegularText());
+//                return factory.changeOnHover(text, () -> {
+//                    InlayPresentation onClick = factory.onClick(text, MouseButton.Left, (___, __) -> {
+//                        result.onClick(editor, element);
+//                        return null;
+//                    });
+//                    return referenceColor(onClick);
+//                }, __ -> true);
 
 
         return factory.smallText(result.getRegularText());
@@ -132,7 +132,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
     private static InlayPresentation referenceColor(@NotNull InlayPresentation presentation) {
         return new AttributesTransformerPresentation(presentation,
                 __ -> {
-                    TextAttributes attributes = EditorColorsManager.getInstance().getGlobalScheme().getAttributes(EditorColors.BREADCRUMBS_HOVERED).clone();
+                    TextAttributes attributes = EditorColorsManager.getInstance().getGlobalScheme().getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES).clone();
                     attributes.setEffectType(EffectType.LINE_UNDERSCORE);
                     return attributes;
                 });
@@ -205,6 +205,8 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 Icon icon = AllIcons.Actions.MoveDown;
 
                 InlayPresentation seq = factory.seq(presentations);
+//                InlayPresentation seq2 = factory.container(seq, new InlayPresentationFactory.Padding(5,5,5,5), new InlayPresentationFactory.RoundedCorners(10,10), new Color(255,0,0), 1);
+
 
 //                <----------------- HOVER -------------------->
 //                InlayPresentation withAppearingSettings = factory.changeOnHover(seq, () -> {

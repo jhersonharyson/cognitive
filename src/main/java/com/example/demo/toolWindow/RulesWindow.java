@@ -36,7 +36,7 @@ public class RulesWindow {
         JFrame parentFrame = new JFrame();
         parentFrame.setSize(dimension);
 
-        JDialog frame = new JDialog(parentFrame, "CDD Rules", true);
+        JDialog frame = new JDialog(parentFrame, "Cognitive Load Analyzer", true);
 
         this.window.setPreferredSize(dimension);
 
@@ -91,7 +91,7 @@ public class RulesWindow {
     }
 
     private void loadTable() {
-        Object[] columnNames = { "Metric", "Cost", "Times", "Total" };
+        Object[] columnNames = { "Metric (ICP)", "Cost", "Times", "Total" };
 
         var model = new DefaultTableModel(columnNames, 0);
 
