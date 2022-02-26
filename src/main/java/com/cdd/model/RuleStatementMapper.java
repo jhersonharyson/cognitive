@@ -81,6 +81,18 @@ public class RuleStatementMapper {
                         .builder()
                         .listOfParameters(List.of("IMPORT_STATIC_STATEMENT", "import_static_statement", "IMPORT_STATIC", "import_static"))
                         .statement(Statement.IMPORT_STATIC_STATEMENT)
+                        .build(),
+
+                ParameterToRuleStatement
+                        .builder()
+                        .listOfParameters(List.of("IMPORT_STATEMENT", "import_statement", "IMPORT", "import"))
+                        .statement(Statement.IMPORT_STATEMENT)
+                        .build(),
+
+                ParameterToRuleStatement
+                        .builder()
+                        .listOfParameters(List.of("CONTEXTUAL_COUPLING", "contextual_coupling"))
+                        .statement(Statement.CONTEXTUAL_COUPLING)
                         .build()
 
         ));

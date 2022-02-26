@@ -1,23 +1,25 @@
 package com.example.demo.utils;
 
 
-import com.cdd.service.Analyzer;
-import com.cdd.service.ClientNotification;
-import com.intellij.codeInsight.CodeInsightUtil;
-import com.intellij.codeInsight.actions.CodeInsightAction;
-import com.intellij.codeInsight.hints.InlayHintsUtils;
-import com.intellij.configurationStore.SaveAndSyncHandlerImpl;
+import com.cdd.service.AnalyzerService;
+import com.cdd.service.ClientNotificationService;
+import com.intellij.ide.DataManager;
 import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
+import com.intellij.openapi.actionSystem.DataConstants;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.command.impl.DummyProject;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.FileEditorState;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.impl.file.impl.FileManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -80,10 +82,18 @@ public class RealtimeState {
     }
 
     public void updateStateByFile(VirtualFile file) {
-        var complexityCounter = new Analyzer().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file));
-        var currentComplexity = complexityCounter.compute();
-        var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
-        this.updateState(currentComplexity, limitOfComplexity, file);
+        DataContext dataContext = DataManager.getInstance().getDataContext();
+        Project project = (Project) dataContext.getData(DataConstants.PROJECT);
+        var psiFile = PsiManager.getInstance(project).findFile(file);
+
+        try {
+            var complexityCounter = new AnalyzerService().readPsiFile(psiFile);
+            var currentComplexity = complexityCounter.compute();
+            var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
+            this.updateState(currentComplexity, limitOfComplexity, file);
+        }catch (Exception ignored){
+            System.out.println(ignored);
+        }
     }
 
     public int getCurrentComplexity() {
@@ -113,7 +123,7 @@ public class RealtimeState {
 
     private void verifyLimitExceeding() {
         if (this.limitOfComplexity > 0 && this.currentComplexity >= this.limitOfComplexity) {
-            ClientNotification.getInstance().notify(this.currentComplexity, this.limitOfComplexity);
+            ClientNotificationService.getInstance().notify(this.currentComplexity, this.limitOfComplexity);
         }
     }
 

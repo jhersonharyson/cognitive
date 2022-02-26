@@ -2,35 +2,30 @@ package com.cdd.service;
 
 import com.example.demo.utils.RealtimeState;
 import com.intellij.notification.*;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.ui.popup.BalloonBuilder;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.ui.EditorNotificationPanel;
-import com.intellij.ui.EditorNotifications;
 import com.intellij.ui.awt.RelativePoint;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class ClientNotification {
-    private static ClientNotification instance;
+public class ClientNotificationService {
+    private static ClientNotificationService instance;
     public Project project;
-    public static NotificationGroup notificationGroup = new NotificationGroup("NotificationClient.Notify", NotificationDisplayType.BALLOON, false);
-    public static NotificationGroup balloonGroup = new NotificationGroup("NotificationClient.Notify", NotificationDisplayType.STICKY_BALLOON, false);
+//    public static NotificationGroup notificationGroup = new NotificationGroup("NotificationClient.Notify", NotificationDisplayType.BALLOON, false);
+//    public static NotificationGroup balloonGroup = new NotificationGroup("NotificationClient.Notify", NotificationDisplayType.STICKY_BALLOON, false);
     private Notification notification;
 
-    private ClientNotification() {
+    private ClientNotificationService() {
     }
 
-    public static ClientNotification getInstance() {
+    public static ClientNotificationService getInstance() {
         if (instance == null) {
-            instance = new ClientNotification();
+            instance = new ClientNotificationService();
         }
         return instance;
     }
@@ -41,8 +36,9 @@ public class ClientNotification {
                 this.notification.expire();
 
             this.notification = new Notification("Plugins Suggestion", "<span style='font-size: 12px;'>Cognitive load limit was exceeded</span>", "<strong>Current cognitive load is <span style='color: #BA6F25;'>" + currentComplexity + "</span> and the limit allowed in this project is  <span style='color: #589DF6;'>" + limitOfComplexity + "</span> </strong><br /><strong>It's time to restructure your code.</strong>", NotificationType.ERROR);
-            this.notification.addAction(new NotificationAction.Simple(() -> "Open rules", (anActionEvent, notification1) -> {
-            }, ""));
+//            var action = new NotificationAction.Simple(() -> "Open rules", (anActionEvent, notification1) -> {
+//            }, "");
+//            this.notification.addAction(action);
 
             this.notification.setCollapseActionsDirection(Notification.CollapseActionsDirection.KEEP_RIGHTMOST);
             this.notification.notify(project);

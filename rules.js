@@ -22,4 +22,4 @@ IMPORT_STATIC_REFERENCE_ELEMENT("import_static_reference_element"),
 SUPER_EXPRESSION("super_expression"),
 SWITCH_STATEMENS("switch_statemens"),
 ANNOTATION("annotation"),
-YIELD_STATEMENT("yield_statement"),
+YIELD_STATEMENT("yield_statement");

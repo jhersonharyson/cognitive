@@ -1,15 +1,17 @@
 package com.example.demo.toolWindow;
 
-import com.cdd.service.Analyzer;
+import com.cdd.service.AnalyzerService;
 import com.example.demo.utils.RealtimeState;
+import com.intellij.ide.DataManager;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.psi.PsiManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 
 public class RulesWindow {
@@ -96,15 +98,22 @@ public class RulesWindow {
         var model = new DefaultTableModel(columnNames, 0);
 
 //        model.addRow(columnNames);
+        try {
+            DataContext dataContext = DataManager.getInstance().getDataContextFromFocus().getResult();
+            Project project = (Project) dataContext.getData(PlatformDataKeys.PROJECT);
+            assert project != null;
+            var psiFile = PsiManager.getInstance(project).findFile(RealtimeState.getInstance().getVirtualFile());
+            var rules = new AnalyzerService().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(RealtimeState.getInstance().getVirtualFile())).getRules();
 
-        var rules = new Analyzer().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(RealtimeState.getInstance().getVirtualFile())).getRules();
+            rules.forEach(rule -> {
+                Object[] row = {rule.getName(), rule.getCost(), rule.getTimes(), rule.getTimes() * rule.getCost()};
+                model.addRow(row);
+            });
 
-        rules.forEach(rule -> {
-            Object[] row = {rule.getName(), rule.getCost(), rule.getTimes(), rule.getTimes() * rule.getCost()};
-            model.addRow(row);
-        });
+            this.table.setModel(model);
+        }catch (Exception e){
 
-        this.table.setModel(model);
+        }
     }
 
     private void loadClassName() {

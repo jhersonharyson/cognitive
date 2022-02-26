@@ -5,6 +5,7 @@ import com.cdd.model.Statement;
 import com.intellij.psi.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class ComplexityMetricsService {
 
@@ -16,7 +17,7 @@ public class ComplexityMetricsService {
             rule.setName(r.getName());
             rule.setCost(r.getCost());
 
-            if (Statement.IF_STATEMENT.getDescription().equals(r.getName())) {
+            if (Statement.IF_STATEMENT.name().equals(r.getName())) {
                 rule.setObject(PsiIfStatement.class);
             } else if (Statement.FOR_STATEMENT.name().equals(r.getName())) {
                 rule.setObject(PsiForStatement.class);
@@ -36,12 +37,8 @@ public class ComplexityMetricsService {
                 rule.setObject(PsiCodeBlock.class);
             } else if (Statement.FOREACH_STATEMENT.name().equals(r.getName())) {
                 rule.setObject(PsiForeachStatement.class);
-            } else if (Statement.IF_STATEMENT.name().equals(r.getName())) {
-                rule.setObject(PsiIfStatement.class);
             } else if (Statement.LOCAL_VARIABLE.name().equals(r.getName())) {
                 rule.setObject(PsiLocalVariable.class);
-            } else if (Statement.IMPORT_STATIC_STATEMENT.name().equals(r.getName())) {
-                rule.setObject(PsiImportStaticStatement.class);
             } else if (Statement.YIELD_STATEMENT.name().equals(r.getName())) {
                 rule.setObject(PsiYieldStatement.class);
             } else if (Statement.WHILE_STATEMENT.name().equals(r.getName())) {
@@ -66,6 +63,14 @@ public class ComplexityMetricsService {
                 rule.setObject(PsiClass.class);
             } else if (Statement.LAMBDA_EXPRESSION.name().equals(r.getName())) {
                 rule.setObject(PsiLambdaExpression.class);
+            } else if (Statement.IMPORT_STATEMENT.name().equals(r.getName())) {
+                rule.setObject(PsiImportStatement.class);
+            } else if (Statement.IMPORT_STATIC_STATEMENT.name().equals(r.getName())) {
+                rule.setObject(PsiImportStaticStatement.class);
+            }
+            else if (Statement.CONTEXTUAL_COUPLING.name().equals(r.getName())) {
+                //rule.setObject(Arrays.asList(PsiTypeElement.class, PsiParameter.class, PsiTypeCastExpression.class, PsiDeclarationStatement.class));
+                rule.setObject(Arrays.asList(PsiImportStatement.class, PsiImportStaticStatement.class)) ;
             }
             if (rule.getObject() != null)
                 listOfRules.add(rule);
@@ -75,11 +80,11 @@ public class ComplexityMetricsService {
     }
 
 
-    public List<Object> getListOfStatements(Set<Rule> rules) {
-        List<Object> statements = new ArrayList<>();
+    public static Set<Object> getListOfStatements(Set<Rule> rules) {
+        Set<Object> statements = new HashSet<>();
 
         rules.forEach(rule -> {
-            if (Statement.IF_STATEMENT.getDescription().equals(rule.getName())) {
+            if (Statement.IF_STATEMENT.name().equals(rule.getName())) {
                 statements.add(PsiIfStatement.class);
             } else if (Statement.FOR_STATEMENT.name().equals(rule.getName())) {
                 statements.add(PsiForStatement.class);
@@ -99,12 +104,8 @@ public class ComplexityMetricsService {
                 statements.add(PsiCodeBlock.class);
             } else if (Statement.FOREACH_STATEMENT.name().equals(rule.getName())) {
                 statements.add(PsiForeachStatement.class);
-            } else if (Statement.IF_STATEMENT.name().equals(rule.getName())) {
-                statements.add(PsiIfStatement.class);
             } else if (Statement.LOCAL_VARIABLE.name().equals(rule.getName())) {
                 statements.add(PsiLocalVariable.class);
-            } else if (Statement.IMPORT_STATIC_STATEMENT.name().equals(rule.getName())) {
-                statements.add(PsiImportStaticStatement.class);
             } else if (Statement.YIELD_STATEMENT.name().equals(rule.getName())) {
                 statements.add(PsiYieldStatement.class);
             } else if (Statement.WHILE_STATEMENT.name().equals(rule.getName())) {
@@ -129,6 +130,19 @@ public class ComplexityMetricsService {
                 statements.add(PsiClass.class);
             } else if (Statement.LAMBDA_EXPRESSION.name().equals(rule.getName())) {
                 statements.add(PsiLambdaExpression.class);
+            } else if (Statement.IMPORT_STATEMENT.name().equals(rule.getName())) {
+                statements.add(PsiImportStatement.class);
+            } else if (Statement.IMPORT_STATIC_STATEMENT.name().equals(rule.getName())) {
+                statements.add(PsiImportStaticStatement.class);
+            }
+
+            else if (Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName())) {
+//                statements.add(PsiTypeElement.class);
+//                statements.add(PsiParameter.class);
+//                statements.add(PsiTypeCastExpression.class);
+//                statements.add(PsiDeclarationStatement.class);
+                statements.add(PsiImportStatement.class);
+                statements.add(PsiImportStaticStatement.class);
             }
         });
 

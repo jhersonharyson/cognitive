@@ -25,7 +25,9 @@ public enum Statement {
     SUPER_EXPRESSION("super_expression"),
     SWITCH_STATEMENT("switch_statement"),
     ANNOTATION("annotation"),
-    YIELD_STATEMENT("yield_statement");
+    YIELD_STATEMENT("yield_statement"),
+    IMPORT_STATEMENT("import_statement"),
+    CONTEXTUAL_COUPLING("contextual_coupling");
 
     private final String statement;
 

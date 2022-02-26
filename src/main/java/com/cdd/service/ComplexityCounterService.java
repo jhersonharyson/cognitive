@@ -1,21 +1,21 @@
 package com.cdd.service;
+// 1 complexity
 
 import com.cdd.model.CddMetrics;
 import com.cdd.model.Rule;
 import com.cdd.model.Statement;
+import com.cdd.utils.ContextualCouplingUtils;
 import com.example.demo.utils.RealtimeState;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.psi.*;
 import com.intellij.psi.javadoc.*;
-import com.intellij.psi.search.FilenameIndex;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ComplexityCounter extends JavaRecursiveElementVisitor {
+public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     HashMap<Statement, Integer> statements = new HashMap<>();
 
     int numberOfIfStatement = 0;
@@ -43,15 +43,17 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
     int numberOfAnnotations = 0;
     int numberOfYieldStatements = 0;
     int numberOfDoWhileStatements = 0;
+    int numberOfImportStatement = 0;
+    int numberOfContextualCoupling = 0;
 
     private CddResource resource;
 
-    public ComplexityCounter(CddResource resource) {
+    public ComplexityCounterService(CddResource resource) {
         super();
         this.resource = resource;
     }
 
-    public ComplexityCounter() {
+    public ComplexityCounterService() {
         super();
     }
 
@@ -62,7 +64,8 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
                 numberOfSwitchExpression + numberOfThrowStatement + numberOfAnonymousClasses +
                 numberOfCLassInitializers + numberOfClasses + numberOfForStatements + numberOfForeachStatements +
                 numberOfLocalVariables + numberOfMethodCallExpressions + numberOfImportStaticStatement +
-                numberOfSuperExpressions + numberOfSwitchStatements + numberOfAnnotations + numberOfYieldStatements);
+                numberOfSuperExpressions + numberOfSwitchStatements + numberOfAnnotations + numberOfYieldStatements +
+                numberOfImportStatement + numberOfContextualCoupling);
     }
 
     public int compute() {
@@ -76,7 +79,7 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
         return metrics.getRules().stream().reduce(0, (subtotal, rule) -> subtotal + (rule.getCost() * this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0)), Integer::sum);
     }
 
-    public CddMetrics getMetrics(){
+    public CddMetrics getMetrics() {
         CddMetrics metrics = new CddMetrics();
         metrics.setLimitOfComplexity(this.resource.limitOfComplexity());
         metrics.setRules(new ComplexityMetricsService().getRules(this.resource.loadMetrics()));
@@ -90,8 +93,8 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
         }
 
         return new ComplexityMetricsService().getRules(this.resource.loadMetrics()).stream().map(rule -> {
-           rule.setTimes(this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0));
-           return rule;
+            rule.setTimes(this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0));
+            return rule;
         }).collect(Collectors.toSet());
     }
 
@@ -195,6 +198,28 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitDeclarationStatement(PsiDeclarationStatement statement) {
+//        var assignStatementText = statement.getNode().getText();
+//        if (assignStatementText.startsWith("var ") && (assignStatementText.contains("=new ") || assignStatementText.contains(" new "))) {
+//            try {
+//                var assign = assignStatementText.split("=")[1];
+//
+//                var sourceAssign = assign.split("\\(.*?\\)")[0];
+//
+//                var classNameWithOffset = sourceAssign.substring(sourceAssign.indexOf("new "));
+//
+//                var className = classNameWithOffset
+//                        .substring(0, classNameWithOffset.contains("(") ? classNameWithOffset.indexOf("(") : classNameWithOffset.length())
+//                        .replace("new ", "").trim();
+//                var file = (PsiJavaFileImpl) statement.getContainingFile();
+//                var classPackage = file.getPackageName() + "." + className;
+//                if (isProjectClass(classPackage) && !Arrays.stream(file.getClasses()).anyMatch( psiClass -> isSameClass(psiClass.getQualifiedName()))) {
+//                    // context coupling
+//                    this.numberOfContextualCoupling += 1;
+//                    this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//                }
+//            } catch (Exception ignored) {
+//            }
+//        }
         super.visitDeclarationStatement(statement);
     }
 
@@ -283,6 +308,27 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitImportStatement(PsiImportStatement statement) {
+        this.numberOfImportStatement += 1;
+        this.statements.put(Statement.IMPORT_STATEMENT, this.numberOfImportStatement);
+
+
+        // FOR CONTEXTUAL_COUPLING
+        var rules = new CddJsonResourceService().loadMetrics();
+
+        var contextualCouplingRule = rules.stream()
+                .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if(ObjectUtils.isNotEmpty(contextualCouplingRule)){
+
+            if(ContextualCouplingUtils.isContextualCoupling(statement.getText())){
+                this.numberOfContextualCoupling += 1;
+                this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+            }
+
+        }
+
         super.visitImportStatement(statement);
     }
 
@@ -290,6 +336,24 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
     public void visitImportStaticStatement(PsiImportStaticStatement statement) {
         this.numberOfImportStaticStatement += 1;
         this.statements.put(Statement.IMPORT_STATIC_STATEMENT, this.numberOfImportStaticStatement);
+
+        // FOR CONTEXTUAL_COUPLING
+        var rules = new CddJsonResourceService().loadMetrics();
+
+        var contextualCouplingRule = rules.stream()
+                .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if(ObjectUtils.isNotEmpty(contextualCouplingRule)){
+
+            if(ContextualCouplingUtils.isContextualCoupling(statement.getText())){
+                this.numberOfContextualCoupling += 1;
+                this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+            }
+
+        }
+
         super.visitImportStaticStatement(statement);
     }
 
@@ -325,6 +389,10 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitLocalVariable(PsiLocalVariable variable) {
+//        if(!isJavaClass(variable.getText())) {
+//            this.numberOfContextualCoupling += 1;
+//            this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//        }
         this.numberOfLocalVariables += 1;
         this.statements.put(Statement.LOCAL_VARIABLE, this.numberOfLocalVariables);
         super.visitLocalVariable(variable);
@@ -356,7 +424,32 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitNewExpression(PsiNewExpression expression) {
+//         var assignStatementText = expression.getNode().getText();
+//        if (assignStatementText.startsWith("var ") && (assignStatementText.contains("=new ") || assignStatementText.contains(" new "))) {
+//            try {
+//                var assign = assignStatementText.split("=")[1];
+//
+//                var sourceAssign = assign.split("\\(.*?\\)")[0];
+//
+//                var classNameWithOffset = sourceAssign.substring(sourceAssign.indexOf("new "));
+//
+//                var className = classNameWithOffset
+//                        .substring(0, classNameWithOffset.contains("(") ? classNameWithOffset.indexOf("(") : classNameWithOffset.length())
+//                        .replace("new ", "").trim();
+//                var file = (PsiJavaFileImpl) expression.getContainingFile();
+//                var classPackage = file.getPackageName() + "." + className;
+//                if (isProjectClass(classPackage) && !Arrays.stream(file.getClasses()).anyMatch( psiClass -> isSameClass(psiClass.getQualifiedName()))) {
+//                    // context coupling
+//                    this.numberOfContextualCoupling += 1;
+//                    this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//                }
+//            } catch (Exception ignored) {
+//
+//            }
+//        }
+
         super.visitNewExpression(expression);
+
     }
 
     @Override
@@ -371,6 +464,14 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitParameter(PsiParameter parameter) {
+//        var file = (PsiJavaFileImpl) parameter.getContainingFile();
+//        var classPackage = file.getPackageName() + "." + parameter.getText();
+//
+//        if (isProjectClass(classPackage) && !Arrays.stream(file.getClasses()).anyMatch( psiClass -> isSameClass(psiClass.getQualifiedName()))) {
+//            // context coupling
+//            this.numberOfContextualCoupling += 1;
+//            this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//        }
         super.visitParameter(parameter);
     }
 
@@ -381,6 +482,7 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitReceiverParameter(PsiReceiverParameter parameter) {
+
         super.visitReceiverParameter(parameter);
     }
 
@@ -526,11 +628,25 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
 
     @Override
     public void visitTypeElement(PsiTypeElement type) {
+//        var file = (PsiJavaFileImpl) type.getContainingFile();
+//        var classPackage = file.getPackageName() + "." + type.getText();
+//        if (isProjectClass(classPackage) && !Arrays.stream(file.getClasses()).anyMatch( psiClass -> isSameClass(psiClass.getQualifiedName())) ) {
+//            // context coupling
+//            this.numberOfContextualCoupling += 1;
+//            this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//        }
         super.visitTypeElement(type);
     }
 
     @Override
     public void visitTypeCastExpression(PsiTypeCastExpression expression) {
+//        var file = (PsiJavaFileImpl) expression.getContainingFile();
+//        var classPackage = file.getPackageName() + "." + expression.getText();
+//        if (isProjectClass(classPackage) && !Arrays.stream(file.getClasses()).anyMatch( psiClass -> isSameClass(psiClass.getQualifiedName()))) {
+//            // context coupling
+//            this.numberOfContextualCoupling += 1;
+//            this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+//        }
         this.numberOfTypeCastExpression += 1;
         this.statements.put(Statement.TYPE_CAST_EXPRESSION, this.numberOfTypeCastExpression);
         super.visitTypeCastExpression(expression);
@@ -711,6 +827,8 @@ public class ComplexityCounter extends JavaRecursiveElementVisitor {
                 ", \n\tnumberOfAnnotations=" + numberOfAnnotations +
                 ", \n\tnumberOfYieldStatements=" + numberOfYieldStatements +
                 ", \n\tnumberOfDoWhileStatements=" + numberOfDoWhileStatements +
+                ", \n\tnumberOfImportStatement=" + numberOfImportStatement +
+                ", \n\tnumberOfContextualCoupling=" + numberOfContextualCoupling +
                 "\n}";
     }
 }

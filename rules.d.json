@@ -1,5 +1,5 @@
 {
-  "limitOfComplexity": 15,
+  "limitOfComplexity": 14,
   "rules": [
     {
       "name": "IF_STATEMENT",
@@ -15,8 +15,16 @@
     },
     {
       "name": "CONTEXT_COUPLING",
+      "cost": 1
+    },
+    {
+      "name": "CONTEXT_COUPLING_WILDCARD",
+      "cost": 1
+    },
+    {
+      "name": "CROSSCUTTING_FEATURES",
       "cost": 1,
-      "parameters": ["spring\..*?\.org"]
+      "parameters": ["spring.*.org"]
     }
   ]
 }

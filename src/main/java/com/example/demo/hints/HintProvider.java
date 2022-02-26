@@ -2,9 +2,10 @@ package com.example.demo.hints;
 
 
 import com.cdd.model.Rule;
-import com.cdd.service.Analyzer;
-import com.cdd.service.CddJsonResource;
+import com.cdd.model.Statement;
+import com.cdd.service.CddJsonResourceService;
 import com.cdd.service.ComplexityMetricsService;
+import com.cdd.utils.ContextualCouplingUtils;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
 import com.intellij.codeInsight.daemon.impl.MarkerType;
@@ -23,7 +24,9 @@ import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.editor.markup.EffectType;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.*;
+import com.intellij.ui.JBColor;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
 import com.intellij.util.ui.UI;
@@ -40,9 +43,12 @@ import java.util.List;
 
 import static io.grpc.internal.ConscryptLoader.isPresent;
 
-@SuppressWarnings("UnstableApiUsage")
+
 public class HintProvider implements InlayHintsProvider<HintSettings> {
     private static final SettingsKey<HintSettings> KEY = new SettingsKey<>("JavaLens");
+    private static final JBColor errorColor = new JBColor(new Color(159, 106, 49), new Color(159, 106, 49));
+    private static final JBColor highlightColor = new JBColor(new Color(203, 192, 169), new Color(203, 192, 169));
+    private static final JBColor defaultColor = new JBColor(new Color(141, 141, 138), new Color(141, 141, 138));
 
     @Override
     public boolean isVisibleInSettings() {
@@ -55,7 +61,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         return KEY;
     }
 
-    private static SettingsKey<String> key = new SettingsKey("SimpleInlayProvider");
+    private static SettingsKey<String> key = new SettingsKey<>("SimpleInlayProvider");
 
 
     @Nls(capitalization = Nls.Capitalization.Sentence)
@@ -108,32 +114,40 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
     private static InlayPresentation createPresentation(@NotNull PresentationFactory factory,
                                                         @NotNull PsiElement element,
                                                         @NotNull Editor editor,
-                                                        @NotNull InlResult result) {
+                                                        @NotNull InlResult result,
+                                                        @Nullable String hover) {
         // <-------------------- ICON ------------------->
         //Icon icon = AllIcons.Toolwindows.ToolWindowFind;
         //Icon icon = IconLoader.getIcon("/toolwindows/toolWindowFind_dark.svg", AllIcons.class);
 
 
-//         <-------------------- HOVER ------------------->
-//                InlayPresentation text = factory.smallText(result.getRegularText());
-//                return factory.changeOnHover(text, () -> {
-//                    InlayPresentation onClick = factory.onClick(text, MouseButton.Left, (___, __) -> {
-//                        result.onClick(editor, element);
-//                        return null;
-//                    });
-//                    return referenceColor(onClick);
-//                }, __ -> true);
+        //<-------------------- HOVER ------------------->
+        InlayPresentation text = factory.smallText(result.getRegularText() + " ");
+
+        var hovered = factory.changeOnHover(text, () -> {
+            InlayPresentation onHover = factory.smallText(result.getRegularText() + "  :  " + hover + " ");
+            return referenceColor(onHover, highlightColor);
+        }, __ -> true);
 
 
-        return factory.smallText(result.getRegularText());
+
+        var currentComplexity = RealtimeState.getInstance().getCurrentComplexity();
+        var limitOfComplexity = RealtimeState.getInstance().getLimitOfComplexity();
+
+        var color  = defaultColor;
+
+        if (currentComplexity >= limitOfComplexity)
+            color = errorColor;
+
+        return referenceColor(factory.roundWithBackgroundAndSmallInset(hovered), color);
     }
 
     @NotNull
-    private static InlayPresentation referenceColor(@NotNull InlayPresentation presentation) {
+    private static InlayPresentation referenceColor(@NotNull InlayPresentation presentation, Color color) {
         return new AttributesTransformerPresentation(presentation,
                 __ -> {
-                    TextAttributes attributes = EditorColorsManager.getInstance().getGlobalScheme().getAttributes(EditorColors.DELETED_TEXT_ATTRIBUTES).clone();
-                    attributes.setEffectType(EffectType.LINE_UNDERSCORE);
+                    TextAttributes attributes = new TextAttributes();
+                    attributes.setForegroundColor(new JBColor(color, color));
                     return attributes;
                 });
     }
@@ -146,12 +160,11 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                                                @NotNull HintSettings settings,
                                                @NotNull InlayHintsSink inlayHintsSink) {
 //        return new HintCollector();
-
         RealtimeState.getInstance().updateStateByFile(file.getVirtualFile());
 
         PresentationFactory factory = new PresentationFactory((EditorImpl) editor);
 
-        Set<Rule> rules = new ComplexityMetricsService().getRules(new CddJsonResource().loadMetrics());
+        Set<Rule> rules = new ComplexityMetricsService().getRules(new CddJsonResourceService().loadMetrics());
 
         return (element, editor1, sink) -> {
 
@@ -178,7 +191,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 @NotNull
                 @Override
                 public String getRegularText() {
-                    String prop = "{0, choice, 1#// 1 Complexity|2#// {0,number} Complexity}";
+                    String prop = "{0, choice, 1# 1 Complexity|2# {0,number} Complexity}";
                     return MessageFormat.format(prop, Objects.requireNonNull(rules.stream().filter(rule -> isInstanceOf(rule, element)).findAny().orElse(null)).getCost());
                 }
             });
@@ -190,22 +203,40 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 int lineStart = editor1.getDocument().getLineStartOffset(line);
                 int indent = offset - lineStart;
 
+                // <-- NEW INDENTATION -->
+                var lineText = editor1.getDocument().getText(new TextRange(lineStart, offset)).split("");
+                var padding = 0;
+                for (String s : lineText) {
+                    if (!s.equals(" ")) {
+                        break;
+                    }
+                    padding++;
+                }
+                // <-- NEW INDENTATION -->
+
+
                 InlayPresentation[] presentations = new InlayPresentation[hints.size() * 2 + 1];
-                presentations[0] = factory.textSpacePlaceholder(indent, false);
+
+
+//                presentations[0] = factory.textSpacePlaceholder(indent, false);
+                // <-- NEW INDENTATION -->
+                presentations[0] = factory.textSpacePlaceholder(padding, false);
+                // <-- NEW INDENTATION -->
+
                 int o = 1;
                 for (int i = 0; i < hints.size(); i++) {
                     InlResult hint = hints.get(i);
                     if (i != 0) {
                         presentations[o++] = factory.text(" ");
                     }
-                    presentations[o++] = createPresentation(factory, element, editor1, hint);
+                    presentations[o++] = createPresentation(factory, element, editor1, hint, this.getRuleName(rules, element));
                 }
                 presentations[o] = factory.textSpacePlaceholder(10, false); // placeholder for "Settings..."
 
                 Icon icon = AllIcons.Actions.MoveDown;
 
                 InlayPresentation seq = factory.seq(presentations);
-//                InlayPresentation seq2 = factory.container(seq, new InlayPresentationFactory.Padding(5,5,5,5), new InlayPresentationFactory.RoundedCorners(10,10), new Color(255,0,0), 1);
+                //InlayPresentation seq2 = factory.container(seq, new InlayPresentationFactory.Padding(5,5,5,5), new InlayPresentationFactory.RoundedCorners(10,10), new Color(255,0,0), 1);
 
 
 //                <----------------- HOVER -------------------->
@@ -224,6 +255,8 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         };
     }
 
+
+
     @Override
     public boolean isLanguageSupported(@NotNull Language language) {
         return language.getID().equals("JAVA");
@@ -234,7 +267,23 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
     }
 
     private boolean isInstanceOf(Rule rule, Object element) {
+        if(rule.getObject() instanceof List<?> && Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName())) {
+          return  ((List<?>) rule.getObject()).stream().anyMatch(object -> {
+
+              final var psiElement = (PsiElement) element;
+              final var isInstanceToAnalyze = ((Class) object).isInstance(element);
+
+              if(isInstanceToAnalyze)
+                return ContextualCouplingUtils.isContextualCoupling(psiElement.getText());
+
+              return false;
+          });
+        }
         return ((Class) rule.getObject()).isInstance(element);
+    }
+
+    private String getRuleName(Set<Rule> rules, Object element) {
+        return rules.stream().filter(rule -> this.isInstanceOf(rule, element)).findFirst().map(Rule::getName).orElse("CDD Complexity").toLowerCase();
     }
 
 }

@@ -6,6 +6,12 @@ import com.cdd.model.RuleStatementMapper;
 import com.cdd.model.Statement;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intellij.ide.DataManager;
+import com.intellij.openapi.actionSystem.DataConstants;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.psi.PsiManager;
@@ -15,35 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class CddJsonResource implements CddResource {
-    private String jsonString = "{\n" +
-            "  \"limitOfComplexity\": 7,\n" +
-            "  \"metricsExtends\" : [\n" +
-            "    {\n" +
-            "      \"file\": \"utils.js\",\n" +
-            "      \"extend\": -2\n" +
-            "    }\n" +
-            "  ],\n" +
-            "  \"rules\": [\n" +
-            "    {\n" +
-            "      \"name\": \"IF_STATEMENT\",\n" +
-            "      \"cost\": 1\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"name\": \"TRY_STATEMENT\",\n" +
-            "      \"cost\": 1\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"name\": \"ANNOTATION\",\n" +
-            "      \"cost\": 7\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"name\": \"FOR_STATEMENT\",\n" +
-            "      \"cost\": 3\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
-    final private String RULES_FILE = "/rules.json";
+public class CddJsonResourceService implements CddResource {
 
     @Override
     public Set<Rule> loadMetrics() {
@@ -81,11 +59,17 @@ public class CddJsonResource implements CddResource {
 
     private String getJson() {
         try {
+            String RULES_FILE = "/rules.json";
             var url = (ProjectManager.getInstance().getOpenProjects()[0].getBasePath() + RULES_FILE);
             var file = LocalFileSystem.getInstance().findFileByPath(url);
             if (file == null)
                 return "{}";
-            return Objects.requireNonNull(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file)).getText();
+
+            DataContext dataContext = DataManager.getInstance().getDataContextFromFocus().getResult();
+            Project project = (Project) dataContext.getData(PlatformDataKeys.PROJECT);
+            assert project != null;
+            var psiFile = PsiManager.getInstance(project).findFile(file);
+            return Objects.requireNonNull(psiFile).getText();
         } catch (Exception e) {
             return "{}";
         }

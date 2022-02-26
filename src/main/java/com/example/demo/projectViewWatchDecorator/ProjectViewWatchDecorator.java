@@ -15,28 +15,22 @@ package com.example.demo.projectViewWatchDecorator;
  */
 
 
-import com.cdd.service.Analyzer;
-import com.intellij.icons.AllIcons;
+import com.cdd.service.AnalyzerService;
+import com.cdd.service.RegisterQualifierService;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.projectView.PresentationData;
 import com.intellij.ide.projectView.ProjectViewNode;
 import com.intellij.ide.projectView.ProjectViewNodeDecorator;
-import com.intellij.ide.projectView.impl.ProjectRootsUtil;
-import com.intellij.openapi.components.ServiceManager;
-import com.intellij.openapi.externalSystem.model.task.ExternalSystemTask;
-import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskState;
-import com.intellij.openapi.externalSystem.service.internal.ExternalSystemExecuteTaskTask;
-import com.intellij.openapi.externalSystem.service.internal.ExternalSystemProcessingManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.packageDependencies.ui.PackageDependenciesNode;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.ui.ColoredTreeCellRenderer;
 
-import java.util.List;
+import java.awt.*;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 
 /**
@@ -101,9 +95,20 @@ public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
 
         if (!file.isDirectory() && file.getFileType() instanceof JavaFileType) {
             try {
-                var complexityCounter = new Analyzer().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file));
+                var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(project).findFile(file));
+                var currentComplexity = complexityCounter.compute();
+                var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
+
+                if (currentComplexity >= limitOfComplexity)
+                    data.setForcedTextForeground(new Color(159, 106, 49));
+
                 data.setTooltip("Points of difficulty of understanding");
                 data.setLocationString(complexityCounter.compute() + " : cognitive load");
+
+
+                RegisterQualifierService.register(((PsiJavaFileImpl) Objects.requireNonNull(PsiManager.getInstance(project).findFile(file))).getClasses());
+
+
             } catch (Exception ignored) {
 
             }

@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>org.example.teste_plugin</id>
-    <name>Plugin display name here</name>
+    <name>Cognitive Load Analyzer</name>
     <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
     <description></description>
@@ -17,14 +17,17 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <actionPromoter implementation="com.example.demo.promoter.MyPromotor"/>
-        <editorFileAssociateFinder implementation="com.example.demo.fileAssociate.MyFileAssociate" />
+<!--        <actionPromoter implementation="com.example.demo.promoter.MyPromotor"/>-->
+<!--        <editorFileAssociateFinder implementation="com.example.demo.fileAssociate.MyFileAssociate" />-->
         <applicationService serviceImplementation="com.example.demo.state.MyIdeaDemoPluginSettings"/>
+
+
+        <applicationService serviceImplementation="com.cdd.state.JavaClassesSettings"/>
         <codeInsight.inlayProvider language="JAVA" implementationClass="com.example.demo.hints.HintProvider"/>
         <toolWindow id="Cognitive Load Analyzer" secondary="true" icon="AllIcons.General.Modified" anchor="right"
                     factoryClass="com.example.demo.toolWindow.MyToolWindowFactory"/>
 <!--        <treeStructureProvider implementation="com.example.demo.treeStructureProvider.MyTreeStructureProvider"/>-->
-        <projectViewNodeDecorator implementation="com.example.demo.projectViewWatchDecorator.ProjectViewWatchDecorator"/>
+<!--        <projectViewNodeDecorator implementation="com.example.demo.projectViewWatchDecorator.ProjectViewWatchDecorator"/>-->
     </extensions>
 
 

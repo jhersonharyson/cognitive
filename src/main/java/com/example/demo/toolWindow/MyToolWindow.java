@@ -1,5 +1,6 @@
 package com.example.demo.toolWindow;
 
+import com.cdd.service.JavaClassesService;
 import com.example.demo.utils.RealtimeLambdaState;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.ide.util.TreeClassChooserFactory;
@@ -8,9 +9,6 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.ui.Gray;
-import com.intellij.ui.JBColor;
-import com.intellij.util.NotNullProducer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,6 +27,7 @@ public class MyToolWindow {
     private JLabel className;
     private JLabel currentComplexity;
     private JLabel limitOfComplexity;
+    private JButton syncButton;
 
     public MyToolWindow(ToolWindow toolWindow, Project project) {
         this.configureRealtimeState();
@@ -51,6 +50,12 @@ public class MyToolWindow {
         this.configureOpenRulesAction();
         this.configureShowComplexityInTheCodeAction();
         this.configureLimitExceededNotificationAction();
+        this.configureSync();
+    }
+
+    private void configureSync() {
+//        this.syncButton.addActionListener(e -> JavaClassesService.run());
+        this.syncButton.addActionListener(e -> JavaClassesService.getListOfQualifiers());
     }
 
     private void configureOpenRulesAction() {
@@ -58,8 +63,6 @@ public class MyToolWindow {
         this.openRulesButton.addActionListener(e -> new RulesWindow());
 
     }
-
-
 
 
     private void configureShowComplexityInTheCodeAction() {
@@ -122,8 +125,8 @@ public class MyToolWindow {
         });
     }
 
-    private void updateColors(){
-        var color = RealtimeState.getInstance().getCurrentComplexity() >= RealtimeState.getInstance().getLimitOfComplexity() ? new Color(186,111,37) : new Color(88, 157, 246);
+    private void updateColors() {
+        var color = RealtimeState.getInstance().getCurrentComplexity() >= RealtimeState.getInstance().getLimitOfComplexity() ? new Color(186, 111, 37) : new Color(88, 157, 246);
         this.className.setForeground(color);
     }
 
