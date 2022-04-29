@@ -20,11 +20,14 @@ import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.impl.file.impl.FileManager;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 public class RealtimeState {
     private static final NotificationGroup STICKY_GROUP =
             new NotificationGroup("demo.notifications.stickyBalloon",
@@ -91,8 +94,8 @@ public class RealtimeState {
             var currentComplexity = complexityCounter.compute();
             var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
             this.updateState(currentComplexity, limitOfComplexity, file);
-        }catch (Exception ignored){
-            System.out.println(ignored);
+        } catch (ResourceNotFoundException ignored) {
+            log.info("resource not found");
         }
     }
 

@@ -6,14 +6,16 @@ import com.intellij.ide.DataManager;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.psi.PsiManager;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.velocity.exception.ResourceNotFoundException;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 
+@Slf4j
 public class RulesWindow {
     private JTable table;
     private JPanel window;
@@ -102,8 +104,8 @@ public class RulesWindow {
             DataContext dataContext = DataManager.getInstance().getDataContextFromFocus().getResult();
             Project project = (Project) dataContext.getData(PlatformDataKeys.PROJECT);
             assert project != null;
-            var psiFile = PsiManager.getInstance(project).findFile(RealtimeState.getInstance().getVirtualFile());
-            var rules = new AnalyzerService().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(RealtimeState.getInstance().getVirtualFile())).getRules();
+
+            var rules = new AnalyzerService().readPsiFile(PsiManager.getInstance(project).findFile(RealtimeState.getInstance().getVirtualFile())).getRules();
 
             rules.forEach(rule -> {
                 Object[] row = {rule.getName(), rule.getCost(), rule.getTimes(), rule.getTimes() * rule.getCost()};
@@ -111,8 +113,8 @@ public class RulesWindow {
             });
 
             this.table.setModel(model);
-        }catch (Exception e){
-
+        } catch (ResourceNotFoundException e){
+            log.info("Resource not found");
         }
     }
 

@@ -28,6 +28,8 @@ import com.intellij.packageDependencies.ui.PackageDependenciesNode;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.ui.ColoredTreeCellRenderer;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.velocity.exception.ResourceNotFoundException;
 
 import java.awt.*;
 import java.util.Objects;
@@ -36,6 +38,7 @@ import java.util.Objects;
 /**
  * @author Simon Jiang
  */
+@Slf4j
 public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
 
     @Override
@@ -109,8 +112,8 @@ public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
                 RegisterQualifierService.register(((PsiJavaFileImpl) Objects.requireNonNull(PsiManager.getInstance(project).findFile(file))).getClasses());
 
 
-            } catch (Exception ignored) {
-
+            } catch (ResourceNotFoundException ignored)  {
+               log.info("resource not found");
             }
         }
     }

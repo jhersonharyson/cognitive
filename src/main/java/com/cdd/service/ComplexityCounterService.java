@@ -8,13 +8,16 @@ import com.cdd.utils.ContextualCouplingUtils;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.psi.*;
 import com.intellij.psi.javadoc.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     HashMap<Statement, Integer> statements = new HashMap<>();
 
@@ -71,7 +74,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     public int compute() {
         if (resource == null) {
             // TODO: Error alert
-            return 0;
+            throw new ResourceNotFoundException("Resource not found");
         }
 
         var metrics = this.getMetrics();
@@ -80,16 +83,21 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     }
 
     public CddMetrics getMetrics() {
+        if (resource == null) {
+            // TODO: Error alert
+            throw new ResourceNotFoundException("Resource not found");
+        }
+
         CddMetrics metrics = new CddMetrics();
         metrics.setLimitOfComplexity(this.resource.limitOfComplexity());
         metrics.setRules(new ComplexityMetricsService().getRules(this.resource.loadMetrics()));
         return metrics;
     }
 
-    public Set<Rule> getRules() {
+    public Set<Rule> getRules() throws ResourceNotFoundException {
         if (resource == null) {
             // TODO: Error alert
-            return null;
+            throw new ResourceNotFoundException("Resource not found");
         }
 
         return new ComplexityMetricsService().getRules(this.resource.loadMetrics()).stream().map(rule -> {
@@ -313,20 +321,24 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
 
 
         // FOR CONTEXTUAL_COUPLING
-        var rules = new CddJsonResourceService().loadMetrics();
+        try {
+            var rules = new CddJsonResourceService().loadMetrics();
 
-        var contextualCouplingRule = rules.stream()
-                .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
-                .findFirst()
-                .orElse(null);
+            var contextualCouplingRule = rules.stream()
+                    .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
+                    .findFirst()
+                    .orElse(null);
 
-        if(ObjectUtils.isNotEmpty(contextualCouplingRule)){
+            if (ObjectUtils.isNotEmpty(contextualCouplingRule)) {
 
-            if(ContextualCouplingUtils.isContextualCoupling(statement.getText())){
-                this.numberOfContextualCoupling += 1;
-                this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+                if (ContextualCouplingUtils.isContextualCoupling(statement.getText())) {
+                    this.numberOfContextualCoupling += 1;
+                    this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+                }
+
             }
-
+        } catch (ResourceNotFoundException ignore) {
+            log.info("resource not found");
         }
 
         super.visitImportStatement(statement);
@@ -338,20 +350,24 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
         this.statements.put(Statement.IMPORT_STATIC_STATEMENT, this.numberOfImportStaticStatement);
 
         // FOR CONTEXTUAL_COUPLING
-        var rules = new CddJsonResourceService().loadMetrics();
+        try {
+            var rules = new CddJsonResourceService().loadMetrics();
 
-        var contextualCouplingRule = rules.stream()
-                .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
-                .findFirst()
-                .orElse(null);
+            var contextualCouplingRule = rules.stream()
+                    .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
+                    .findFirst()
+                    .orElse(null);
 
-        if(ObjectUtils.isNotEmpty(contextualCouplingRule)){
+            if (ObjectUtils.isNotEmpty(contextualCouplingRule)) {
 
-            if(ContextualCouplingUtils.isContextualCoupling(statement.getText())){
-                this.numberOfContextualCoupling += 1;
-                this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+                if (ContextualCouplingUtils.isContextualCoupling(statement.getText())) {
+                    this.numberOfContextualCoupling += 1;
+                    this.statements.put(Statement.CONTEXTUAL_COUPLING, this.numberOfContextualCoupling);
+                }
+
             }
-
+        } catch (ResourceNotFoundException ignore) {
+            log.info("resource not found");
         }
 
         super.visitImportStaticStatement(statement);

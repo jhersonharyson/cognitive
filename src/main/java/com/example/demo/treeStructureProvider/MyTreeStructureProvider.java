@@ -2,14 +2,19 @@ package com.example.demo.treeStructureProvider;
 
 import com.cdd.service.AnalyzerService;
 import com.intellij.icons.AllIcons;
+import com.intellij.ide.DataManager;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.projectView.TreeStructureProvider;
 import com.intellij.ide.projectView.ViewSettings;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.ide.util.treeView.AbstractTreeNode;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiManager;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +37,8 @@ public class MyTreeStructureProvider implements TreeStructureProvider {
                 VirtualFile file = ((PsiFileNode) child).getVirtualFile();
                 if (file != null && !file.isDirectory() && (file.getFileType() instanceof JavaFileType)) {
                     try {
-                        var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(ProjectManager.getInstance().getDefaultProject()).findFile(file));
+
+                        var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(parent.getProject()).findFile(file));
                         child.getPresentation().setTooltip("Points of difficulty of understanding");
                         child.getPresentation().setLocationString("55 : cognitive load");
                         child.getPresentation().setSeparatorAbove(true);

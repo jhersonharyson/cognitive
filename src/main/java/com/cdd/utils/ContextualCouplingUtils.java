@@ -21,6 +21,10 @@ public class ContextualCouplingUtils {
                 .replace(SEMICOLON_STATEMENT, "");
 
         var rules = new CddJsonResourceService().loadMetrics();
+
+        if(ObjectUtils.isEmpty(rules))
+            return false;
+
         var contextualCouplingRule = rules.stream()
                 .filter(rule -> Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName()))
                 .findFirst()

@@ -30,6 +30,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
 import com.intellij.util.ui.UI;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -164,7 +165,12 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
         PresentationFactory factory = new PresentationFactory((EditorImpl) editor);
 
-        Set<Rule> rules = new ComplexityMetricsService().getRules(new CddJsonResourceService().loadMetrics());
+        Set<Rule> rules;
+        try {
+            rules = new ComplexityMetricsService().getRules(new CddJsonResourceService().loadMetrics());
+        } catch (ResourceNotFoundException exception) {
+            return (element, editor1, sink) -> true;
+        }
 
         return (element, editor1, sink) -> {
 

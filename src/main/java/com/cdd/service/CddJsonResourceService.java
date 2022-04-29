@@ -11,10 +11,14 @@ import com.intellij.openapi.actionSystem.DataConstants;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.psi.PsiManager;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.velocity.exception.ResourceNotFoundException;
 
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +47,11 @@ public class CddJsonResourceService implements CddResource {
             e.printStackTrace();
         }
 
-        return Objects.requireNonNull(obj);
+        if(ObjectUtils.isEmpty(obj)){
+            throw new ResourceNotFoundException("resource not found !");
+        }
+
+        return obj;
     }
 
     private Set<Rule> mapperFriendlyLabelsToRules(Set<Rule> rules) {
@@ -65,8 +73,8 @@ public class CddJsonResourceService implements CddResource {
             if (file == null)
                 return "{}";
 
-            DataContext dataContext = DataManager.getInstance().getDataContextFromFocus().getResult();
-            Project project = (Project) dataContext.getData(PlatformDataKeys.PROJECT);
+//            DataContext dataContext = DataManager.getInstance().getDataContext();
+            Project project = ProjectManager.getInstance().getOpenProjects()[0];//(Project) dataContext.getData(DataConstants.PROJECT);
             assert project != null;
             var psiFile = PsiManager.getInstance(project).findFile(file);
             return Objects.requireNonNull(psiFile).getText();
