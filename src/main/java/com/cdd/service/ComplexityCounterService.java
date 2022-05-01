@@ -1,6 +1,7 @@
 package com.cdd.service;
 // 1 complexity
 
+import com.cdd.integrations.utils.CodeSmellIntegrationUtil;
 import com.cdd.model.CddMetrics;
 import com.cdd.model.Rule;
 import com.cdd.model.Statement;
@@ -48,6 +49,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     int numberOfDoWhileStatements = 0;
     int numberOfImportStatement = 0;
     int numberOfContextualCoupling = 0;
+    int numberOfFeatureEnvy = 0;
 
     private CddResource resource;
 
@@ -68,7 +70,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
                 numberOfCLassInitializers + numberOfClasses + numberOfForStatements + numberOfForeachStatements +
                 numberOfLocalVariables + numberOfMethodCallExpressions + numberOfImportStaticStatement +
                 numberOfSuperExpressions + numberOfSwitchStatements + numberOfAnnotations + numberOfYieldStatements +
-                numberOfImportStatement + numberOfContextualCoupling);
+                numberOfImportStatement + numberOfContextualCoupling + numberOfFeatureEnvy);
     }
 
     public int compute() {
@@ -78,6 +80,24 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
         }
 
         var metrics = this.getMetrics();
+
+
+        try{
+
+            if(!CodeSmellIntegrationUtil.taskRunning){
+                var codeSmell = CodeSmellIntegrationUtil.getInstance();
+                codeSmell.detectFeatureEnvy();
+            }
+
+
+        }catch (Exception ignore){
+
+        }
+
+
+
+
+
         RealtimeState.getInstance().setLimitOfComplexity(metrics.getLimitOfComplexity());
         return metrics.getRules().stream().reduce(0, (subtotal, rule) -> subtotal + (rule.getCost() * this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0)), Integer::sum);
     }
@@ -418,6 +438,16 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     public void visitMethod(PsiMethod method) {
         this.numberOfMethods += 1;
         this.statements.put(Statement.METHOD, this.numberOfMethods);
+
+            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings)) {
+                if(CodeSmellIntegrationUtil.getInstance().refactorings
+                        .stream().anyMatch(refactoring -> refactoring.getMethod().equals(method))){
+                    this.numberOfFeatureEnvy += 1;
+                    this.statements.put(Statement.FEATURE_ENVY, this.numberOfFeatureEnvy);
+
+                }
+            }
+
         super.visitMethod(method);
     }
 

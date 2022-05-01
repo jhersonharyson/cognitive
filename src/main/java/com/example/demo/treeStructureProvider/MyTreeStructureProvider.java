@@ -40,13 +40,13 @@ public class MyTreeStructureProvider implements TreeStructureProvider {
 
                         var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(parent.getProject()).findFile(file));
                         child.getPresentation().setTooltip("Points of difficulty of understanding");
-                        child.getPresentation().setLocationString("55 : cognitive load");
+                        child.getPresentation().setLocationString("XX : cognitive load");
                         child.getPresentation().setSeparatorAbove(true);
-                        child.getPresentation().setPresentableText("asdasdasdasdasd");
+                        child.getPresentation().setPresentableText("test1");
                         child.getPresentation().setIcon(AllIcons.Idea_logo_welcome);
                         Objects.requireNonNull(child.getChildren().stream().findFirst().orElse(null)).getPresentation().setTooltip("asdasda");
-                        Objects.requireNonNull(child.getElement()).getPresentation().setLocationString("54asd5as6d5");
-                        child.getElement().getPresentation().setTooltip("54654654654654654");
+                        Objects.requireNonNull(child.getElement()).getPresentation().setLocationString("test2");
+                        child.getElement().getPresentation().setTooltip("test3");
                         added = true;
                         nodes.add(child);
                     } catch (Exception ignored) {

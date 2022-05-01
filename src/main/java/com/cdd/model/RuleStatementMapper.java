@@ -93,6 +93,13 @@ public class RuleStatementMapper {
                         .builder()
                         .listOfParameters(List.of("CONTEXTUAL_COUPLING", "contextual_coupling"))
                         .statement(Statement.CONTEXTUAL_COUPLING)
+                        .build(),
+
+
+                ParameterToRuleStatement
+                        .builder()
+                        .listOfParameters(List.of("FEATURE_ENVY", "feature_envy", "CODE_SMELL", "code_smell"))
+                        .statement(Statement.FEATURE_ENVY)
                         .build()
 
         ));

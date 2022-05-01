@@ -9,13 +9,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 
-public class MyPromotor implements ActionPromoter {
+public class MyPromotor {}
 
-    @Override
-    public List<AnAction> promote(@NotNull List<? extends AnAction> actions, @NotNull DataContext context) {
-        AnAction action = ContainerUtil.findInstance(actions, MyChangeFileAction.class);
-        return action != null ? Collections.singletonList(action) : Collections.emptyList();
-    }
+//
+//        implements ActionPromoter {
+//
+//    @Override
+//    public List<AnAction> promote(@NotNull List<? extends AnAction> actions, @NotNull DataContext context) {
+//        AnAction action = ContainerUtil.findInstance(actions, MyChangeFileAction.class);
+//        return action != null ? Collections.singletonList(action) : Collections.emptyList();
+//    }
+//
 
-
-}
+//}

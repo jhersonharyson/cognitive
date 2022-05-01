@@ -27,7 +27,8 @@ public enum Statement {
     ANNOTATION("annotation"),
     YIELD_STATEMENT("yield_statement"),
     IMPORT_STATEMENT("import_statement"),
-    CONTEXTUAL_COUPLING("contextual_coupling");
+    CONTEXTUAL_COUPLING("contextual_coupling"),
+    FEATURE_ENVY("feature_envy");
 
     private final String statement;
 

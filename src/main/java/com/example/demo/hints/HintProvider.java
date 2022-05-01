@@ -1,6 +1,7 @@
 package com.example.demo.hints;
 
 
+import com.cdd.integrations.utils.CodeSmellIntegrationUtil;
 import com.cdd.model.Rule;
 import com.cdd.model.Statement;
 import com.cdd.service.CddJsonResourceService;
@@ -30,6 +31,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
 import com.intellij.util.ui.UI;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
@@ -172,6 +174,11 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
             return (element, editor1, sink) -> true;
         }
 
+        if(!CodeSmellIntegrationUtil.taskRunning) {
+            var codeSmell = CodeSmellIntegrationUtil.getInstance();
+            codeSmell.detectFeatureEnvy();
+        }
+
         return (element, editor1, sink) -> {
 
             if (!RealtimeState.getInstance().isShowComplexityInTheCode())
@@ -198,7 +205,8 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 @Override
                 public String getRegularText() {
                     String prop = "{0, choice, 1# 1 Complexity|2# {0,number} Complexity}";
-                    return MessageFormat.format(prop, Objects.requireNonNull(rules.stream().filter(rule -> isInstanceOf(rule, element)).findAny().orElse(null)).getCost());
+                    return MessageFormat.format(prop, Objects.requireNonNull(rules.stream().filter(
+                            rule -> isInstanceOf(rule, element)).findAny().orElse(null)).getCost());
                 }
             });
 
@@ -273,10 +281,11 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
     }
 
     private boolean isInstanceOf(Rule rule, Object element) {
+        final var psiElement = (PsiElement) element;
+
         if(rule.getObject() instanceof List<?> && Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName())) {
           return  ((List<?>) rule.getObject()).stream().anyMatch(object -> {
 
-              final var psiElement = (PsiElement) element;
               final var isInstanceToAnalyze = ((Class) object).isInstance(element);
 
               if(isInstanceToAnalyze)
@@ -285,6 +294,15 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
               return false;
           });
         }
+
+        if(Statement.FEATURE_ENVY.name().equals(rule.getName())) {
+            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings) && psiElement instanceof PsiMethod) {
+                return CodeSmellIntegrationUtil.getInstance().refactorings
+                        .stream().anyMatch(refactoring -> refactoring.getMethod().equals(psiElement));
+            }
+            return false;
+        }
+
         return ((Class) rule.getObject()).isInstance(element);
     }
 

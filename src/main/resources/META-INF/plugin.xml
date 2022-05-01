@@ -3,7 +3,7 @@
     <name>Cognitive Load Analyzer</name>
     <vendor email="support@cdd.com" url="http://www.cdd.com">Cognitive Driven Development</vendor>
 
-    <description>Cognitive Load Analizer</description>
+    <description>Cognitive Load Analyzer - A support tool for Cognitive-Driven Development</description>
 
     <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -31,6 +31,17 @@
                     factoryClass="com.example.demo.toolWindow.MyToolWindowFactory"/>
         <treeStructureProvider implementation="com.example.demo.treeStructureProvider.MyTreeStructureProvider"/>
         <projectViewNodeDecorator implementation="com.example.demo.projectViewWatchDecorator.ProjectViewWatchDecorator"/>
+
+
+
+        <statistic.eventLog.eventLoggerProvider
+                implementation="com.cdd.integrations.code.smell.jdeodorant.ide.fus.IntelliJDeodorantLoggerProvider"/>
+
+        <toolWindow id="IntelliJDeodorant" secondary="true" anchor="bottom"
+                    factoryClass="com.cdd.integrations.code.smell.jdeodorant.ide.ui.RefactoringsToolWindowFactory"/>
+
+        <errorHandler implementation="com.cdd.integrations.code.smell.intellijdeodorant.reporting.GitHubErrorReporter"/>
+
     </extensions>
 
 

@@ -67,11 +67,13 @@ public class ComplexityMetricsService {
                 rule.setObject(PsiImportStatement.class);
             } else if (Statement.IMPORT_STATIC_STATEMENT.name().equals(r.getName())) {
                 rule.setObject(PsiImportStaticStatement.class);
-            }
-            else if (Statement.CONTEXTUAL_COUPLING.name().equals(r.getName())) {
+            } else if (Statement.CONTEXTUAL_COUPLING.name().equals(r.getName())) {
                 //rule.setObject(Arrays.asList(PsiTypeElement.class, PsiParameter.class, PsiTypeCastExpression.class, PsiDeclarationStatement.class));
                 rule.setObject(Arrays.asList(PsiImportStatement.class, PsiImportStaticStatement.class)) ;
+            } else if (Statement.FEATURE_ENVY.name().equals(r.getName())) {
+                rule.setObject(PsiMethod.class);
             }
+
             if (rule.getObject() != null)
                 listOfRules.add(rule);
         });
@@ -143,6 +145,10 @@ public class ComplexityMetricsService {
 //                statements.add(PsiDeclarationStatement.class);
                 statements.add(PsiImportStatement.class);
                 statements.add(PsiImportStaticStatement.class);
+            }
+
+            else if (Statement.FEATURE_ENVY.name().equals(rule.getName())) {
+                statements.add(PsiMethod.class);
             }
         });
 
