@@ -1,0 +1,69 @@
+package com.cdd.integrations.code.smell.jdeodorant.inheritance;
+
+import com.cdd.integrations.code.smell.jdeodorant.core.ast.ClassObject;
+import com.cdd.integrations.code.smell.jdeodorant.core.ast.SystemObject;
+import com.cdd.integrations.code.smell.jdeodorant.core.ast.TypeObject;
+
+import java.util.*;
+
+public class CompleteInheritanceDetection {
+    private final Map<String, LinkedHashSet<String>> subclassMap;
+
+    public CompleteInheritanceDetection(SystemObject system) {
+        this.subclassMap = new LinkedHashMap<>();
+        generateInheritanceHierarchies(system);
+    }
+
+    private void addSubclassToSuperclass(String superclass, String subclass) {
+        if (subclassMap.containsKey(superclass)) {
+            LinkedHashSet<String> subclasses = subclassMap.get(superclass);
+            subclasses.add(subclass);
+        } else {
+            LinkedHashSet<String> subclasses = new LinkedHashSet<>();
+            subclasses.add(subclass);
+            subclassMap.put(superclass, subclasses);
+        }
+    }
+
+    private void generateInheritanceHierarchies(SystemObject system) {
+        ListIterator<ClassObject> classIterator = system.getClassListIterator();
+        while (classIterator.hasNext()) {
+            ClassObject classObject = classIterator.next();
+            TypeObject superclassType = classObject.getSuperclass();
+            if (superclassType != null) {
+                String superclass = superclassType.getClassType();
+                if (system.getClassObject(superclass) != null) {
+                    addSubclassToSuperclass(superclass, classObject.getName());
+                }
+            }
+            ListIterator<TypeObject> interfaceIterator = classObject.getInterfaceIterator();
+            while (interfaceIterator.hasNext()) {
+                TypeObject superInterface = interfaceIterator.next();
+                if (system.getClassObject(superInterface.getClassType()) != null) {
+                    addSubclassToSuperclass(superInterface.getClassType(), classObject.getName());
+                }
+            }
+        }
+    }
+
+    public InheritanceTree getTree(String className) {
+        if (subclassMap.containsKey(className)) {
+            InheritanceTree tree = new InheritanceTree();
+            recursivelyConstructTree(tree, className);
+            return tree;
+        } else {
+            return null;
+        }
+    }
+
+    private void recursivelyConstructTree(InheritanceTree tree, String className) {
+        if (subclassMap.containsKey(className)) {
+            LinkedHashSet<String> subclasses = subclassMap.get(className);
+            for (String subclass : subclasses) {
+                tree.addChildToParent(subclass, className);
+                recursivelyConstructTree(tree, subclass);
+            }
+        }
+    }
+
+}
