@@ -208,15 +208,30 @@ class ExtractMethodPanel extends JPanel {
             public void run(@NotNull ProgressIndicator indicator) {
                 ApplicationManager.getApplication().runReadAction(() -> {
                     Set<ASTSliceGroup> candidates = getExtractMethodRefactoringOpportunities(projectInfo, indicator);
-                    final List<ExtractMethodCandidateGroup> extractMethodCandidateGroups = candidates.stream().filter(Objects::nonNull)
+                    final List<ExtractMethodCandidateGroup> extractMethodCandidateGroups = candidates.stream()
                             .map(sliceGroup ->
-                                    sliceGroup.getCandidates().stream()
-                                            .filter(c -> canBeExtracted(c))
-                                            .collect(toSet()))
+                            {
+                               return sliceGroup.getCandidates().stream()
+                                        .filter(c -> canBeExtracted(c))
+                                        .collect(toSet());
+                            })
                             .filter(set -> !set.isEmpty())
                             .map(ExtractMethodCandidateGroup::new)
                             .sorted(Comparator.comparing(ExtractMethodCandidateGroup::getDescription))
                             .collect(toList());
+
+                    var nonNullCandidates = candidates.stream().filter(Objects::nonNull);
+                    var canBeExtracted = nonNullCandidates.map(sliceGroup ->
+                                    sliceGroup.getCandidates().stream()
+                                            .filter(c -> canBeExtracted(c))
+                                            .collect(toSet()));
+
+                    var a = canBeExtracted.filter(set -> !set.isEmpty());
+                            var b = a.map(ExtractMethodCandidateGroup::new)
+                            .sorted(Comparator.comparing(ExtractMethodCandidateGroup::getDescription))
+                            .collect(toList());
+
+
                     treeTableModel.setCandidateRefactoringGroups(extractMethodCandidateGroups);
                     ApplicationManager.getApplication().invokeLater(() -> showRefactoringsTable());
                     IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "extract.method", extractMethodCandidateGroups.size());

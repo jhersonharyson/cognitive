@@ -31,6 +31,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
 import com.intellij.util.ui.UI;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.Nls;
@@ -46,7 +47,7 @@ import java.util.List;
 
 import static io.grpc.internal.ConscryptLoader.isPresent;
 
-
+@Slf4j
 public class HintProvider implements InlayHintsProvider<HintSettings> {
     private static final SettingsKey<HintSettings> KEY = new SettingsKey<>("JavaLens");
     private static final JBColor errorColor = new JBColor(new Color(159, 106, 49), new Color(159, 106, 49));
@@ -175,8 +176,14 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         }
 
         if(!CodeSmellIntegrationUtil.taskRunning) {
-            var codeSmell = CodeSmellIntegrationUtil.getInstance();
-            codeSmell.detectFeatureEnvy();
+            try{
+                var codeSmell = CodeSmellIntegrationUtil.getInstance();
+//                codeSmell.asyncDetectFeatureEnvy();
+                codeSmell.asyncDetect();
+            }catch (NoClassDefFoundError ignored){
+                log.info("HitProvider feature envy not ready");
+            }
+
         }
 
         return (element, editor1, sink) -> {
@@ -296,9 +303,13 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         }
 
         if(Statement.FEATURE_ENVY.name().equals(rule.getName())) {
-            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings) && psiElement instanceof PsiMethod) {
-                return CodeSmellIntegrationUtil.getInstance().refactorings
-                        .stream().anyMatch(refactoring -> refactoring.getMethod().equals(psiElement));
+            try{
+                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings) && psiElement instanceof PsiMethod) {
+                    return CodeSmellIntegrationUtil.getInstance().refactorings
+                            .stream().anyMatch(refactoring -> refactoring.getMethod().equals(psiElement));
+                }
+            }catch (NoClassDefFoundError ignored){
+             log.info("HintProvider instanceOf feature envy not ready");
             }
             return false;
         }

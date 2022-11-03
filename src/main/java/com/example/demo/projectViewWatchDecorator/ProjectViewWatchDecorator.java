@@ -15,6 +15,7 @@ package com.example.demo.projectViewWatchDecorator;
  */
 
 
+import com.cdd.integrations.utils.CodeSmellIntegrationUtil;
 import com.cdd.service.AnalyzerService;
 import com.cdd.service.RegisterQualifierService;
 import com.intellij.ide.highlighter.JavaFileType;
@@ -102,11 +103,14 @@ public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
                 var currentComplexity = complexityCounter.compute();
                 var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
 
+                if (currentComplexity * 1.3 >= limitOfComplexity)
+                    data.setForcedTextForeground(new Color(173, 178, 42));
+
                 if (currentComplexity >= limitOfComplexity)
                     data.setForcedTextForeground(new Color(159, 106, 49));
 
                 data.setTooltip("Points of difficulty of understanding");
-                data.setLocationString(complexityCounter.compute() + " : cognitive load");
+                data.setLocationString(currentComplexity + " : cognitive load");
 
 
                 RegisterQualifierService.register(((PsiJavaFileImpl) Objects.requireNonNull(PsiManager.getInstance(project).findFile(file))).getClasses());
@@ -114,6 +118,8 @@ public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
 
             } catch (ResourceNotFoundException ignored)  {
                log.info("resource not found");
+            } catch (NullPointerException e){
+                log.info("null pointer ", e);
             }
         }
     }

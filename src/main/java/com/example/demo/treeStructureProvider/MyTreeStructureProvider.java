@@ -38,7 +38,7 @@ public class MyTreeStructureProvider implements TreeStructureProvider {
                 if (file != null && !file.isDirectory() && (file.getFileType() instanceof JavaFileType)) {
                     try {
 
-                        var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(parent.getProject()).findFile(file));
+//                        var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(parent.getProject()).findFile(file));
                         child.getPresentation().setTooltip("Points of difficulty of understanding");
                         child.getPresentation().setLocationString("XX : cognitive load");
                         child.getPresentation().setSeparatorAbove(true);
@@ -50,7 +50,7 @@ public class MyTreeStructureProvider implements TreeStructureProvider {
                         added = true;
                         nodes.add(child);
                     } catch (Exception ignored) {
-                        System.out.println(ignored);
+                        System.out.println(ignored+"123 "+file);
                     }
                 }
             }

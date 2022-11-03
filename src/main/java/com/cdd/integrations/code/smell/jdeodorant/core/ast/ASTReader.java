@@ -12,8 +12,9 @@ import java.util.*;
 public class ASTReader {
     private static SystemObject systemObject;
 
-    public ASTReader(ProjectInfo project, ProgressIndicator indicator) {
+    public ASTReader(ProjectInfo project, ProgressIndicator indicator) throws IllegalStateException{
         indicator.setText(IntelliJDeodorantBundle.message("feature.envy.parsing.indicator"));
+        indicator.setIndeterminate(false);
         indicator.setFraction(0.0);
         systemObject = new SystemObject();
         List<PsiClass> classes = project.getClasses();

@@ -44,7 +44,9 @@ public class CddJsonResourceService implements CddResource {
             obj = mapper.readValue(this.getJson(), CddMetrics.class);
             obj.setRules(mapperFriendlyLabelsToRules(obj.getRules()));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            System.out.println("json exception");
+        } catch (Exception e){
+            System.out.println("Exception "+ e);
         }
 
         if(ObjectUtils.isEmpty(obj)){

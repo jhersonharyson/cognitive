@@ -1,12 +1,12 @@
 package com.example.demo.toolWindow;
 
-import com.cdd.service.JavaClassesService;
 import com.example.demo.utils.RealtimeLambdaState;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.ide.util.TreeClassChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 
@@ -31,9 +31,14 @@ public class MyToolWindow {
 
     public MyToolWindow(ToolWindow toolWindow, Project project) {
         this.configureRealtimeState();
+        this.configureCurrentOpenedFileInfo();
         this.configureActions(project);
         this.initializeCheckbox();
 
+    }
+
+    private void configureCurrentOpenedFileInfo() {
+        var file = FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles();
     }
 
     public JPanel getContent() {
@@ -54,8 +59,41 @@ public class MyToolWindow {
     }
 
     private void configureSync() {
-//        this.syncButton.addActionListener(e -> JavaClassesService.run());
-        this.syncButton.addActionListener(e -> JavaClassesService.getListOfQualifiers());
+
+        this.syncButton.addActionListener(e -> {
+            try {
+                Project project = ProjectManager.getInstance().getOpenProjects()[0];
+                var files = FileEditorManager.getInstance(project).getSelectedFiles();
+                if (files.length >= 1) {
+                    this.classAnalysed = files[0];
+                    this.className.setText(this.classAnalysed.getName());
+                    RealtimeState.getInstance().setFile(files[0]);
+                    files[0].refresh(true, true);
+                    FileEditorManager.getInstance(project).closeFile(files[0]);
+                    FileEditorManager.getInstance(project).openTextEditor(new OpenFileDescriptor(project, files[0]).setUseCurrentWindow(true), false);
+
+//                    PsiFile file = PsiManager.getInstance(project).findFile(files[0]);
+//                    ApplicationManager.getApplication().runWriteAction(()->{
+//                        PsiDocumentManager documentManager = PsiDocumentManager.getInstance(project);
+//                        Document document = documentManager.getDocument(file);
+//                        document.insertString(0, "");
+//                        //FileEditorManager.getInstance(project).getEditors(files[0])[0].getBackgroundHighlighter().getInlayModel(). InlayModel.addBlockElement()
+//                        DataContext dataContext = DataManager.getInstance().getDataContext();
+//                        EditorImpl editor = ObjectUtils.tryCast(dataContext.getData(CommonDataKeys.EDITOR), EditorImpl.class);
+//                        editor.get.getInlayModel()
+//                        Arrays.stream(FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles()).forEach( f -> {
+//                            FileDocumentManager.getInstance().reloadFiles(f);
+//                        });
+//                    });
+
+//                    files[0]
+//                            FileEditorManager.getInstance(project).wr
+                }
+            } catch (Exception ignored) {
+                System.out.println("ee " + ignored);
+            }
+        });
+
     }
 
     private void configureOpenRulesAction() {
@@ -82,7 +120,7 @@ public class MyToolWindow {
     private void configureChooseAnotherClassAction(Project project) {
         this.chooseAnotherClassButton.addActionListener(l -> {
 
-            var classChooser = TreeClassChooserFactory.getInstance(project).createFileChooser("adasdasdasda", null, null, null, true);
+            var classChooser = TreeClassChooserFactory.getInstance(project).createFileChooser("adasdasdasda", null, null, null, false);
             classChooser.showDialog();
 
             if (classChooser.getSelectedFile() != null) {

@@ -8,6 +8,7 @@ import com.cdd.integrations.code.smell.jdeodorant.ide.fus.collectors.IntelliJDeo
 import com.cdd.integrations.code.smell.jdeodorant.ide.refactoring.moveMethod.MoveMethodRefactoring;
 import com.cdd.integrations.code.smell.jdeodorant.ide.ui.AbstractRefactoringPanel;
 import com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils;
+import com.cdd.utils.Debouncer;
 import com.intellij.analysis.AnalysisScope;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileEditor;
@@ -21,6 +22,7 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiManager;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -35,18 +37,26 @@ import java.util.stream.Collectors;
 
 public class CodeSmellIntegrationUtil {
 
-	public static boolean taskRunning = false;
+	private static final int DEBOUNCE_INTERVAL = 10_000;
+	private static CodeSmellIntegrationUtil INSTANCE;
 
-	private static class CodeSmellIntegrationUtilHolder {
-		private static final CodeSmellIntegrationUtil INSTANCE = new CodeSmellIntegrationUtil();
-	}
+	public static boolean taskRunning = false;
+	private static final String FEATURE_ENVY = "feature.evy";
+
+	private static final String LONG_METHOD = "long.method";
 
 	public static CodeSmellIntegrationUtil getInstance() {
-		return CodeSmellIntegrationUtilHolder.INSTANCE;
+		if (INSTANCE == null) {
+			INSTANCE = new CodeSmellIntegrationUtil();
+		}
+		return INSTANCE;
 	}
 
-	private Project project;
-	private Task.Backgroundable backgroundable;
+	private final Project project;
+//	private final Task.Backgroundable backgroundable;
+
+	private final Task.Backgroundable asyncFeatureEnvyBackgroundable;
+	private final Task.Backgroundable asyncLongMethodBackgroundable;
 
 	public final List<MoveMethodRefactoring> refactorings = new ArrayList<>();
 
@@ -55,29 +65,180 @@ public class CodeSmellIntegrationUtil {
 	private ProjectInfo projectInfo;
 	private final Set<String> classNamesToBeExamined = new HashSet<>();
 
+	private final Debouncer<String> featureEnvyDebouncer;
+	private final Debouncer<String> longMethodDebouncer;
 
 	public CodeSmellIntegrationUtil() {
 		project = ProjectManager.getInstance().getOpenProjects()[0];
-		currentFileScope = getCurrentFileScope();
-		backgroundable = taskDetectFeatureEnvy();
-		projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
+		//currentFileScope = getCurrentFileScope();
+
+//		backgroundable = null;//taskDetectFeatureEnvy();
+		asyncFeatureEnvyBackgroundable = asyncTaskDetectFeatureEnvy();
+		asyncLongMethodBackgroundable = asyncTaskDetectLongMethod();
+
+		featureEnvyDebouncer = featureEnvyDebouncer();
+		longMethodDebouncer = LongMethodDebouncer();
+
+		projectInfo = Objects.isNull(currentFileScope) ? null : new ProjectInfo(currentFileScope, true);
 	}
 
-	public void detectFeatureEnvy() {
-
-		ProjectInfo projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
-
-		PsiUtils.extractFiles(project).stream()
-						.filter(currentFileScope::contains)
-						.forEach(list ->
-										Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
-
-//		backgroundable.onCancel();
-		taskRunning = true;
-		AbstractRefactoringPanel.runAfterCompilationCheck(backgroundable, project, projectInfo);
+	private Debouncer<String> featureEnvyDebouncer() {
+		return getBackgroundableDebouncer(asyncFeatureEnvyBackgroundable);
 	}
 
-	Task.Backgroundable taskDetectFeatureEnvy() {
+	private Debouncer<String> LongMethodDebouncer() {
+		return getBackgroundableDebouncer(asyncLongMethodBackgroundable);
+	}
+
+	@NotNull
+	private Debouncer<String> getBackgroundableDebouncer(Task.Backgroundable task) {
+		return new Debouncer<>(d -> {
+
+			ApplicationManager.getApplication().runReadAction(() -> {
+				currentFileScope = getCurrentFileScope();
+				if (currentFileScope == null) return;
+				ProjectInfo projectInfo = new ProjectInfo(currentFileScope, true);
+
+				PsiUtils.extractFiles(project).stream()
+								.filter(currentFileScope::contains)
+								.forEach(list ->
+												Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
+				taskRunning = true;
+				AbstractRefactoringPanel.asyncRunAfterCompilationCheck(task, project, projectInfo);
+			});
+		}, DEBOUNCE_INTERVAL);
+	}
+
+//	public void detectFeatureEnvy() {
+//		currentFileScope = getCurrentFileScope();
+//		if (currentFileScope == null) return;
+//		ProjectInfo projectInfo = new ProjectInfo(currentFileScope, true);
+//
+//		PsiUtils.extractFiles(project).stream()
+//						.filter(currentFileScope::contains)
+//						.forEach(list ->
+//										Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
+//
+////		backgroundable.onCancel();
+//		taskRunning = true;
+//		AbstractRefactoringPanel.runAfterCompilationCheck(backgroundable, project, projectInfo);
+//	}
+
+	public void asyncDetectFeatureEnvy() {
+		ApplicationManager.getApplication().runReadAction(() -> {
+			try {
+				featureEnvyDebouncer.call(FEATURE_ENVY);
+			} catch (Throwable ignored) {
+				System.out.println("ignored 2323");
+			}
+		});
+	}
+
+	public void asyncDetectLongMethod() {
+		ApplicationManager.getApplication().runReadAction(() -> {
+			try {
+				longMethodDebouncer.call(LONG_METHOD);
+			} catch (Throwable ignored) {
+				System.out.println("ignored 2323132342");
+			}
+		});
+	}
+
+	public void asyncDetect() {
+		asyncDetectFeatureEnvy();
+		asyncDetectLongMethod();
+	}
+
+//	Task.Backgroundable taskDetectFeatureEnvy() {
+//		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("feature.envy.detect.indicator.status"), true) {
+//			@Override
+//			public void run(@NotNull ProgressIndicator indicator) {
+//
+//				ApplicationManager.getApplication().runReadAction(() -> {
+//					try {
+//
+//						if (ObjectUtils.isEmpty(projectInfo)) {
+//							projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
+//						}
+//
+//						List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
+//
+////                    ((SmartPsiElementPointerImpl) candidates.get(0).visualizationData.getMethodToBeMoved().psiMethod).getElement()
+//
+//						final List<MoveMethodRefactoring> references = candidates.stream().filter(Objects::nonNull)
+//										.map(x ->
+//														new MoveMethodRefactoring(x.getSourceMethodDeclaration(),
+//																		x.getTargetClass().getClassObject().getPsiClass(),
+//																		x.getDistinctSourceDependencies(),
+//																		x.getDistinctTargetDependencies()))
+//										.collect(Collectors.toList());
+//
+//						refactorings.clear();
+//						refactorings.addAll(new ArrayList<>(references));
+//						numberOfFeatureEnvy = refactorings.size();
+//						IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
+//
+//					} finally {
+//						taskRunning = false;
+//					}
+//				});
+//			}
+//
+//			@Override
+//			public void onCancel() {
+//				super.onCancel();
+//				taskRunning = false;
+//			}
+//		};
+//	}
+
+
+	Task.Backgroundable asyncTaskDetectFeatureEnvy() {
+		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("feature.envy.detect.indicator.status"), true) {
+			@Override
+			public void run(@NotNull ProgressIndicator indicator) {
+
+				ApplicationManager.getApplication().runReadAction(() -> {
+						try {
+
+							if(ObjectUtils.isEmpty(projectInfo)){
+								projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
+							}
+
+							List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
+
+
+//                    ((SmartPsiElementPointerImpl) candidates.get(0).visualizationData.getMethodToBeMoved().psiMethod).getElement()
+							final List<MoveMethodRefactoring> references = candidates.stream().filter(Objects::nonNull)
+											.map(x ->
+															new MoveMethodRefactoring(x.getSourceMethodDeclaration(),
+																			x.getTargetClass().getClassObject().getPsiClass(),
+																			x.getDistinctSourceDependencies(),
+																			x.getDistinctTargetDependencies()))
+											.collect(Collectors.toList());
+
+							refactorings.clear();
+							refactorings.addAll(new ArrayList<>(references));
+							numberOfFeatureEnvy = refactorings.size();
+							IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
+
+						} catch (Throwable ignored){
+							System.out.println("ignored 2234234"+ ignored);
+						} finally {
+							taskRunning = false;
+						}
+					});
+			}
+
+			@Override
+			public void onCancel() {
+				super.onCancel();
+				taskRunning = false;
+			}
+		};
+	}
+
+	Task.Backgroundable asyncTaskDetectLongMethod() {
 		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("feature.envy.detect.indicator.status"), true) {
 			@Override
 			public void run(@NotNull ProgressIndicator indicator) {
@@ -85,10 +246,14 @@ public class CodeSmellIntegrationUtil {
 				ApplicationManager.getApplication().runReadAction(() -> {
 					try {
 
-					List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
+						if(ObjectUtils.isEmpty(projectInfo)){
+							projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
+						}
+
+						List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
+
 
 //                    ((SmartPsiElementPointerImpl) candidates.get(0).visualizationData.getMethodToBeMoved().psiMethod).getElement()
-
 						final List<MoveMethodRefactoring> references = candidates.stream().filter(Objects::nonNull)
 										.map(x ->
 														new MoveMethodRefactoring(x.getSourceMethodDeclaration(),
@@ -102,6 +267,8 @@ public class CodeSmellIntegrationUtil {
 						numberOfFeatureEnvy = refactorings.size();
 						IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
 
+					} catch (Throwable ignored){
+						System.out.println("ignored 2234234"+ ignored);
 					} finally {
 						taskRunning = false;
 					}
@@ -115,6 +282,7 @@ public class CodeSmellIntegrationUtil {
 			}
 		};
 	}
+
 
 
 	private AnalysisScope getCurrentFileScope() {

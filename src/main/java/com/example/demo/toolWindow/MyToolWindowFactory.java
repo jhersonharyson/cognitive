@@ -1,6 +1,7 @@
 package com.example.demo.toolWindow;
 
 
+import com.example.demo.utils.RealtimeState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
@@ -17,6 +18,7 @@ public class MyToolWindowFactory implements ToolWindowFactory {
      * @param toolWindow current tool window
      */
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
+//        RealtimeState.getInstance().setProject(project);
         MyToolWindow myToolWindow = new MyToolWindow(toolWindow, project);
         ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
         Content content = contentFactory.createContent(myToolWindow.getContent(), "", false);

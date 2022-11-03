@@ -1,13 +1,18 @@
 package com.example.demo.utils;
 
 
+import com.cdd.integrations.code.smell.jdeodorant.core.distance.ProjectInfo;
+import com.cdd.integrations.code.smell.jdeodorant.ide.ui.AbstractRefactoringPanel;
+import com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils;
 import com.cdd.service.AnalyzerService;
 import com.cdd.service.ClientNotificationService;
+import com.cdd.utils.Debouncer;
 import com.intellij.ide.DataManager;
 import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.openapi.actionSystem.DataConstants;
 import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.impl.DummyProject;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
@@ -18,6 +23,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.impl.file.impl.FileManager;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +38,7 @@ public class RealtimeState {
     private static final NotificationGroup STICKY_GROUP =
             new NotificationGroup("demo.notifications.stickyBalloon",
                     NotificationDisplayType.STICKY_BALLOON, true);
+    private static final String UPDATE_STATE_BY_FILE = "update.state.by.file";
 
     private static RealtimeState realtimeState;
     private RealtimeLambdaState listener;
@@ -43,12 +50,15 @@ public class RealtimeState {
     private boolean showComplexityInTheCode = true;
     private boolean limitExceededNotification = true;
 
+    private Debouncer<String> debouncer;
+    private int DEBOUNCE_INTERVAL = 3_000;
 
     private RealtimeState() {
+        debouncer = updateStateByFileDebouncer();
         ProjectManager.getInstance().getDefaultProject().getMessageBus().connect().subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
-            @Override
-            public void after(@NotNull List<? extends VFileEvent> events) {
-                events.get(0);
+    @Override
+    public void after(@NotNull List<? extends VFileEvent> events) {
+            events.get(0);
             }
         });
     }
@@ -85,18 +95,33 @@ public class RealtimeState {
     }
 
     public void updateStateByFile(VirtualFile file) {
-        DataContext dataContext = DataManager.getInstance().getDataContext();
-        Project project = (Project) dataContext.getData(DataConstants.PROJECT);
-        var psiFile = PsiManager.getInstance(project).findFile(file);
+        setFile(file);
+        setCurrentComplexity(0);
+        ApplicationManager.getApplication().runReadAction(() -> debouncer.call(UPDATE_STATE_BY_FILE+"___"+file.toString()));
+    }
 
-        try {
-            var complexityCounter = new AnalyzerService().readPsiFile(psiFile);
-            var currentComplexity = complexityCounter.compute();
-            var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
-            this.updateState(currentComplexity, limitOfComplexity, file);
-        } catch (ResourceNotFoundException ignored) {
-            log.info("resource not found");
-        }
+    private Debouncer<String> updateStateByFileDebouncer() {
+        return new Debouncer<>(d -> {
+
+            ApplicationManager.getApplication().invokeLater(() -> {
+//                ProjectManager.getInstance().getOpenProjects()[0];
+
+                try {
+                    DataContext dataContext = DataManager.getInstance().getDataContext();
+                    Project project = (Project) dataContext.getData(DataConstants.PROJECT);
+                    var psiFile = PsiManager.getInstance(project).findFile(VirtualFileManager.getInstance().findFileByUrl(d.split("___")[1]));
+
+                    var complexityCounter = new AnalyzerService().readPsiFile(psiFile);
+                    var currentComplexity = complexityCounter.compute();
+                    var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
+                    this.updateState(currentComplexity, limitOfComplexity, file);
+                } catch (ResourceNotFoundException ignored) {
+                    log.info("resource not found");
+                } catch (Exception e){
+                    log.info("error 1", e);
+                }
+            });
+        }, DEBOUNCE_INTERVAL);
     }
 
     public int getCurrentComplexity() {

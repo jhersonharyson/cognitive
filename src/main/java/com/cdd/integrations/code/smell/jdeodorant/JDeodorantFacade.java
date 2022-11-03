@@ -14,7 +14,7 @@ import java.util.*;
 
 public class JDeodorantFacade {
 
-    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator, Set<String> classNamesToBeExamined) {
+    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator, Set<String> classNamesToBeExamined) throws IllegalStateException {
         new ASTReader(project, indicator);
         MySystem system = new MySystem(ASTReader.getSystemObject(), false);
         DistanceMatrix distanceMatrix = new DistanceMatrix(system);

@@ -112,6 +112,18 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         ProgressManager.getInstance().run(compilationBackgroundable);
     }
 
+    public static void asyncRunAfterCompilationCheck(Task.Backgroundable afterCompilationBackgroundable,
+                                                Project project, ProjectInfo projectInfo) {
+        final Task.Backgroundable compilationBackgroundable = new Task.Backgroundable(project, IntelliJDeodorantBundle.message("project.compiling.indicator.text"), true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                asyncRunAfterCompilationCheck(projectInfo, afterCompilationBackgroundable);
+            }
+        };
+
+        ProgressManager.getInstance().run(compilationBackgroundable);
+    }
+
     /**
      * Compiles the project and runs the task only if there are no compilation errors.
      */
@@ -135,6 +147,33 @@ public abstract class AbstractRefactoringPanel extends JPanel {
                 };
                 CompileScope compileScope = compilerManager.createFilesCompileScope(virtualFiles);
                 compilerManager.make(compileScope, callback);
+            } else {
+                ProgressManager.getInstance().run(task);
+            }
+        });
+    }
+
+    private static void asyncRunAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            List<PsiClass> classes = projectInfo.getClasses();
+
+            if (!classes.isEmpty()) {
+                ProgressManager.getInstance().run(task);
+//                VirtualFile[] virtualFiles = classes.stream()
+//                        .map(classObject -> classObject.getContainingFile().getVirtualFile()).toArray(VirtualFile[]::new);
+//                Project project = projectInfo.getProject();
+//
+//                CompilerManager compilerManager = CompilerManager.getInstance(project);
+//                CompileStatusNotification callback = (aborted, errors, warnings, compileContext) -> {
+//                    if (errors == 0 && !aborted) {
+//                        ProgressManager.getInstance().run(task);
+//                    } else {
+//                        task.onCancel();
+//                        AbstractRefactoringPanel.showCompilationErrorNotification(project);
+//                    }
+//                };
+//                CompileScope compileScope = compilerManager.createFilesCompileScope(virtualFiles);
+//                compilerManager.compile(compileScope, callback);
             } else {
                 ProgressManager.getInstance().run(task);
             }

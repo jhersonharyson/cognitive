@@ -86,11 +86,12 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
 
             if(!CodeSmellIntegrationUtil.taskRunning){
                 var codeSmell = CodeSmellIntegrationUtil.getInstance();
-                codeSmell.detectFeatureEnvy();
+//                codeSmell.asyncDetectFeatureEnvy();
+                codeSmell.asyncDetect();
             }
 
 
-        }catch (Exception ignore){
+        }catch (NoClassDefFoundError ignore){
 
         }
 
@@ -438,15 +439,19 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     public void visitMethod(PsiMethod method) {
         this.numberOfMethods += 1;
         this.statements.put(Statement.METHOD, this.numberOfMethods);
+            try{
+                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings)) {
+                    if(CodeSmellIntegrationUtil.getInstance().refactorings
+                            .stream().anyMatch(refactoring -> refactoring.getMethod().equals(method))){
+                        this.numberOfFeatureEnvy += 1;
+                        this.statements.put(Statement.FEATURE_ENVY, this.numberOfFeatureEnvy);
 
-            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings)) {
-                if(CodeSmellIntegrationUtil.getInstance().refactorings
-                        .stream().anyMatch(refactoring -> refactoring.getMethod().equals(method))){
-                    this.numberOfFeatureEnvy += 1;
-                    this.statements.put(Statement.FEATURE_ENVY, this.numberOfFeatureEnvy);
-
+                    }
                 }
+            } catch (ExceptionInInitializerError ignored){
+                log.info("visit method feature envy not ready");
             }
+
 
         super.visitMethod(method);
     }
