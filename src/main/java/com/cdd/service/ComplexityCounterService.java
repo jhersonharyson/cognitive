@@ -50,6 +50,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     int numberOfImportStatement = 0;
     int numberOfContextualCoupling = 0;
     int numberOfFeatureEnvy = 0;
+    int numberOfLongMethod = 0;
 
     private CddResource resource;
 
@@ -70,7 +71,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
                 numberOfCLassInitializers + numberOfClasses + numberOfForStatements + numberOfForeachStatements +
                 numberOfLocalVariables + numberOfMethodCallExpressions + numberOfImportStaticStatement +
                 numberOfSuperExpressions + numberOfSwitchStatements + numberOfAnnotations + numberOfYieldStatements +
-                numberOfImportStatement + numberOfContextualCoupling + numberOfFeatureEnvy);
+                numberOfImportStatement + numberOfContextualCoupling + numberOfFeatureEnvy + numberOfLongMethod);
     }
 
     public int compute() {
@@ -82,21 +83,18 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
         var metrics = this.getMetrics();
 
 
-        try{
+        try {
 
-            if(!CodeSmellIntegrationUtil.taskRunning){
-                var codeSmell = CodeSmellIntegrationUtil.getInstance();
-//                codeSmell.asyncDetectFeatureEnvy();
-                codeSmell.asyncDetect();
-            }
+//            if (!CodeSmellIntegrationUtil.taskRunning) {
+//                var codeSmell = CodeSmellIntegrationUtil.getInstance();
+////                codeSmell.asyncDetectFeatureEnvy();
+//                codeSmell.asyncDetect();
+//            }
 
 
-        }catch (NoClassDefFoundError ignore){
-
+        } catch (NoClassDefFoundError ignore) {
+            log.info("3");
         }
-
-
-
 
 
         RealtimeState.getInstance().setLimitOfComplexity(metrics.getLimitOfComplexity());
@@ -111,7 +109,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
 
         CddMetrics metrics = new CddMetrics();
         metrics.setLimitOfComplexity(this.resource.limitOfComplexity());
-        metrics.setRules(new ComplexityMetricsService().getRules(this.resource.loadMetrics()));
+        metrics.setRules(ComplexityMetricsService.getRules(this.resource.loadMetrics()));
         return metrics;
     }
 
@@ -121,7 +119,7 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
             throw new ResourceNotFoundException("Resource not found");
         }
 
-        return new ComplexityMetricsService().getRules(this.resource.loadMetrics()).stream().map(rule -> {
+        return ComplexityMetricsService.getRules(this.resource.loadMetrics()).stream().map(rule -> {
             rule.setTimes(this.statements.getOrDefault(Statement.valueOf(rule.getName()), 0));
             return rule;
         }).collect(Collectors.toSet());
@@ -439,18 +437,26 @@ public class ComplexityCounterService extends JavaRecursiveElementVisitor {
     public void visitMethod(PsiMethod method) {
         this.numberOfMethods += 1;
         this.statements.put(Statement.METHOD, this.numberOfMethods);
-            try{
-                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings)) {
-                    if(CodeSmellIntegrationUtil.getInstance().refactorings
-                            .stream().anyMatch(refactoring -> refactoring.getMethod().equals(method))){
-                        this.numberOfFeatureEnvy += 1;
-                        this.statements.put(Statement.FEATURE_ENVY, this.numberOfFeatureEnvy);
+        try {
+            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().featureEnvyRefactorings)) {
+                if (CodeSmellIntegrationUtil.getInstance().featureEnvyRefactorings
+                        .stream().parallel().anyMatch(refactoring -> refactoring.getMethod().equals(method))) {
+                    this.numberOfFeatureEnvy += 1;
+                    this.statements.put(Statement.FEATURE_ENVY, this.numberOfFeatureEnvy);
 
-                    }
                 }
-            } catch (ExceptionInInitializerError ignored){
-                log.info("visit method feature envy not ready");
             }
+            if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().longMethodRefactorings)) {
+                if (CodeSmellIntegrationUtil.getInstance().longMethodRefactorings
+                        .stream().parallel().anyMatch(refactoring -> refactoring.stream().anyMatch(r -> r.getSourceMethodDeclaration().equals(method)))) {
+                    this.numberOfLongMethod += 1;
+                    this.statements.put(Statement.LONG_METHOD, this.numberOfLongMethod);
+
+                }
+            }
+        } catch (ExceptionInInitializerError ignored) {
+            log.info("visit method feature envy not ready");
+        }
 
 
         super.visitMethod(method);

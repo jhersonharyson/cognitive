@@ -28,7 +28,8 @@ public enum Statement {
     YIELD_STATEMENT("yield_statement"),
     IMPORT_STATEMENT("import_statement"),
     CONTEXTUAL_COUPLING("contextual_coupling"),
-    FEATURE_ENVY("feature_envy");
+    FEATURE_ENVY("feature_envy"),
+    LONG_METHOD("long_method");
 
     private final String statement;
 

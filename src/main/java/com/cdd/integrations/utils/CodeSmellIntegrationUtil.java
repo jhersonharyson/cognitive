@@ -2,12 +2,16 @@ package com.cdd.integrations.utils;
 
 import com.cdd.integrations.code.smell.jdeodorant.IntelliJDeodorantBundle;
 import com.cdd.integrations.code.smell.jdeodorant.JDeodorantFacade;
+import com.cdd.integrations.code.smell.jdeodorant.core.ast.decomposition.cfg.ASTSlice;
+import com.cdd.integrations.code.smell.jdeodorant.core.ast.decomposition.cfg.ASTSliceGroup;
 import com.cdd.integrations.code.smell.jdeodorant.core.distance.MoveMethodCandidateRefactoring;
 import com.cdd.integrations.code.smell.jdeodorant.core.distance.ProjectInfo;
 import com.cdd.integrations.code.smell.jdeodorant.ide.fus.collectors.IntelliJDeodorantCounterCollector;
 import com.cdd.integrations.code.smell.jdeodorant.ide.refactoring.moveMethod.MoveMethodRefactoring;
 import com.cdd.integrations.code.smell.jdeodorant.ide.ui.AbstractRefactoringPanel;
+import com.cdd.integrations.code.smell.jdeodorant.ide.ui.ExtractMethodPanel;
 import com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils;
+import com.cdd.service.EditorService;
 import com.cdd.utils.Debouncer;
 import com.intellij.analysis.AnalysisScope;
 import com.intellij.openapi.application.ApplicationManager;
@@ -34,6 +38,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.cdd.integrations.code.smell.jdeodorant.JDeodorantFacade.*;
+import static java.util.stream.Collectors.*;
+
 
 public class CodeSmellIntegrationUtil {
 
@@ -58,9 +65,11 @@ public class CodeSmellIntegrationUtil {
 	private final Task.Backgroundable asyncFeatureEnvyBackgroundable;
 	private final Task.Backgroundable asyncLongMethodBackgroundable;
 
-	public final List<MoveMethodRefactoring> refactorings = new ArrayList<>();
+	public final List<MoveMethodRefactoring> featureEnvyRefactorings = new ArrayList<>();
+	public final List<Set<ASTSlice>> longMethodRefactorings = new ArrayList<>();
 
 	public int numberOfFeatureEnvy = 0;
+	public int numberOfLongMethod = 0;
 	private AnalysisScope currentFileScope;
 	private ProjectInfo projectInfo;
 	private final Set<String> classNamesToBeExamined = new HashSet<>();
@@ -205,6 +214,11 @@ public class CodeSmellIntegrationUtil {
 								projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
 							}
 
+//							PsiUtils.extractFiles(project).stream()
+//									.filter(file -> currentFileScope.contains(file))
+//									.forEach(list ->
+//											Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
+
 							List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
 
 
@@ -217,11 +231,11 @@ public class CodeSmellIntegrationUtil {
 																			x.getDistinctTargetDependencies()))
 											.collect(Collectors.toList());
 
-							refactorings.clear();
-							refactorings.addAll(new ArrayList<>(references));
-							numberOfFeatureEnvy = refactorings.size();
+							featureEnvyRefactorings.clear();
+							featureEnvyRefactorings.addAll(new ArrayList<>(references));
+							numberOfFeatureEnvy = featureEnvyRefactorings.size();
 							IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
-
+							EditorService.syncFiles();
 						} catch (Throwable ignored){
 							System.out.println("ignored 2234234"+ ignored);
 						} finally {
@@ -239,34 +253,105 @@ public class CodeSmellIntegrationUtil {
 	}
 
 	Task.Backgroundable asyncTaskDetectLongMethod() {
-		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("feature.envy.detect.indicator.status"), true) {
+		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("long.method.detect.indicator.status"), true) {
 			@Override
 			public void run(@NotNull ProgressIndicator indicator) {
 
 				ApplicationManager.getApplication().runReadAction(() -> {
-					try {
+					try{
 
 						if(ObjectUtils.isEmpty(projectInfo)){
 							projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
 						}
 
-						List<MoveMethodCandidateRefactoring> candidates = JDeodorantFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator, classNamesToBeExamined);
+						PsiUtils.extractFiles(project).stream()
+								.filter(file -> currentFileScope.contains(file))
+								.forEach(list ->
+										Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
 
+					Set<ASTSliceGroup> candidates = getExtractMethodRefactoringOpportunities(projectInfo, indicator);
+//					final List<ExtractMethodCandidateGroup> extractMethodCandidateGroups = candidates.stream()
+//							.map(sliceGroup ->
+//									sliceGroup.getCandidates().stream()
+//											.filter(c -> new ExtractMethodPanel(currentFileScope).canBeExtracted(c))
+//											.collect(toSet()))
+//							.filter(set -> !set.isEmpty())
+//							.map(ExtractMethodCandidateGroup::new)
+//							.sorted(Comparator.comparing(ExtractMethodCandidateGroup::getDescription))
+//							.collect(toList());
 
-//                    ((SmartPsiElementPointerImpl) candidates.get(0).visualizationData.getMethodToBeMoved().psiMethod).getElement()
-						final List<MoveMethodRefactoring> references = candidates.stream().filter(Objects::nonNull)
-										.map(x ->
-														new MoveMethodRefactoring(x.getSourceMethodDeclaration(),
-																		x.getTargetClass().getClassObject().getPsiClass(),
-																		x.getDistinctSourceDependencies(),
-																		x.getDistinctTargetDependencies()))
-										.collect(Collectors.toList());
+					var nonNullCandidates = candidates.stream().filter(Objects::nonNull);
+					var canBeExtracted = nonNullCandidates.map(sliceGroup ->
+							sliceGroup.getCandidates().stream()
+									.filter(c -> new ExtractMethodPanel(currentFileScope).canBeExtracted(c))
+									.collect(toSet()));
 
-						refactorings.clear();
-						refactorings.addAll(new ArrayList<>(references));
-						numberOfFeatureEnvy = refactorings.size();
+					final List<Set<ASTSlice>> references = canBeExtracted.filter(set -> !set.isEmpty()).collect(toList());
+//					var b = a.map(ExtractMethodCandidateGroup::new)
+//							.sorted(Comparator.comparing(ExtractMethodCandidateGroup::getDescription))
+//							.collect(toList());
+
+//
+//					treeTableModel.setCandidateRefactoringGroups(extractMethodCandidateGroups);
+//					ApplicationManager.getApplication().invokeLater(() -> showRefactoringsTable());
+//					IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "extract.method", extractMethodCandidateGroups.size());
+//
+//
+						longMethodRefactorings.clear();
+						longMethodRefactorings.addAll(references);
+						numberOfLongMethod = longMethodRefactorings.size();
 						IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
+						EditorService.syncFiles();
+					} catch (Throwable ignored){
+						System.out.println("ignored 2234234"+ ignored);
+					} finally {
+						taskRunning = false;
+					}
+				});
+			}
 
+			@Override
+			public void onCancel() {
+				super.onCancel();
+				taskRunning = false;
+			}
+		};
+	}
+
+
+	Task.Backgroundable asyncTaskDetectTypeStateChecking() {
+		return new Task.Backgroundable(project, IntelliJDeodorantBundle.message("type.state.checking.identification.indicator.status"), true) {
+			@Override
+			public void run(@NotNull ProgressIndicator indicator) {
+
+				ApplicationManager.getApplication().runReadAction(() -> {
+					try{
+
+						if(ObjectUtils.isEmpty(projectInfo)){
+							projectInfo = new ProjectInfo(Objects.requireNonNull(currentFileScope), true);
+						}
+
+						PsiUtils.extractFiles(project).stream()
+								.filter(file -> currentFileScope.contains(file))
+								.forEach(list ->
+										Arrays.stream(list.getClasses()).map(PsiClass::getQualifiedName).forEach(classNamesToBeExamined::add));
+
+						Set<ASTSliceGroup> candidates = getExtractMethodRefactoringOpportunities(projectInfo, indicator);
+
+
+						var nonNullCandidates = candidates.stream().filter(Objects::nonNull);
+						var canBeExtracted = nonNullCandidates.map(sliceGroup ->
+								sliceGroup.getCandidates().stream()
+										.filter(c -> new ExtractMethodPanel(currentFileScope).canBeExtracted(c))
+										.collect(toSet()));
+
+						final List<Set<ASTSlice>> references = canBeExtracted.filter(set -> !set.isEmpty()).collect(toList());
+
+						longMethodRefactorings.clear();
+						longMethodRefactorings.addAll(references);
+						numberOfLongMethod = longMethodRefactorings.size();
+						IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "move.method", references.size());
+						EditorService.syncFiles();
 					} catch (Throwable ignored){
 						System.out.println("ignored 2234234"+ ignored);
 					} finally {

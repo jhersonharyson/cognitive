@@ -15,25 +15,36 @@ package com.example.demo.projectViewWatchDecorator;
  */
 
 
+import com.cdd.integrations.code.smell.jdeodorant.core.distance.ProjectInfo;
+import com.cdd.integrations.code.smell.jdeodorant.ide.ui.AbstractRefactoringPanel;
+import com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils;
 import com.cdd.integrations.utils.CodeSmellIntegrationUtil;
 import com.cdd.service.AnalyzerService;
 import com.cdd.service.RegisterQualifierService;
+import com.cdd.utils.Debouncer;
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.ide.projectView.PresentationData;
 import com.intellij.ide.projectView.ProjectViewNode;
 import com.intellij.ide.projectView.ProjectViewNodeDecorator;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.packageDependencies.ui.PackageDependenciesNode;
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.ui.ColoredTreeCellRenderer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.exception.ResourceNotFoundException;
 
+import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -41,6 +52,9 @@ import java.util.Objects;
  */
 @Slf4j
 public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
+    private static final Color ORANGE_COLOR = new Color(159, 106, 49);
+    private static final Color YELLOW_COLOR = new Color(173, 178, 42);
+
 
     @Override
     public void decorate(PackageDependenciesNode node, ColoredTreeCellRenderer cellRenderer) {
@@ -98,30 +112,35 @@ public class ProjectViewWatchDecorator implements ProjectViewNodeDecorator {
 
 
         if (!file.isDirectory() && file.getFileType() instanceof JavaFileType) {
+
             try {
+
                 var complexityCounter = new AnalyzerService().readPsiFile(PsiManager.getInstance(project).findFile(file));
                 var currentComplexity = complexityCounter.compute();
                 var limitOfComplexity = complexityCounter.getMetrics().getLimitOfComplexity();
 
-                if (currentComplexity * 1.3 >= limitOfComplexity)
-                    data.setForcedTextForeground(new Color(173, 178, 42));
+                if (currentComplexity >= limitOfComplexity) {
+                    data.setForcedTextForeground(ORANGE_COLOR);
+                } else if (currentComplexity * 1.3 >= limitOfComplexity) {
+                    data.setForcedTextForeground(YELLOW_COLOR);
+                }
 
-                if (currentComplexity >= limitOfComplexity)
-                    data.setForcedTextForeground(new Color(159, 106, 49));
-
-                data.setTooltip("Points of difficulty of understanding");
+//                            data.setTooltip("Points of difficulty of understanding");
                 data.setLocationString(currentComplexity + " : cognitive load");
 
 
                 RegisterQualifierService.register(((PsiJavaFileImpl) Objects.requireNonNull(PsiManager.getInstance(project).findFile(file))).getClasses());
 
 
-            } catch (ResourceNotFoundException ignored)  {
-               log.info("resource not found");
-            } catch (NullPointerException e){
+            } catch (ResourceNotFoundException ignored) {
+                log.info("resource not found");
+            } catch (NullPointerException e) {
                 log.info("null pointer ", e);
             }
+
+
         }
     }
+
 
 }

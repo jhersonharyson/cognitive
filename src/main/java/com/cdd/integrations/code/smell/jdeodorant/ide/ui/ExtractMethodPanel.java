@@ -27,6 +27,7 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.treeStructure.treetable.TreeTable;
 import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.SmartList;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import com.cdd.integrations.code.smell.jdeodorant.IntelliJDeodorantBundle;
@@ -58,7 +59,8 @@ import static com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils.*;
 /**
  * Panel for Extract Method refactoring.
  */
-class ExtractMethodPanel extends JPanel {
+@Slf4j
+public class ExtractMethodPanel extends JPanel {
     @NotNull
     private final AnalysisScope scope;
     private final ExtractMethodTreeTableModel treeTableModel = new ExtractMethodTreeTableModel();
@@ -73,7 +75,7 @@ class ExtractMethodPanel extends JPanel {
     );
     private final ScopeChooserCombo scopeChooserCombo;
 
-    ExtractMethodPanel(@NotNull AnalysisScope scope) {
+    public ExtractMethodPanel(@NotNull AnalysisScope scope) {
         this.scope = scope;
         this.scopeChooserCombo = new ScopeChooserCombo(scope.getProject());
         setLayout(new BorderLayout());
@@ -283,7 +285,7 @@ class ExtractMethodPanel extends JPanel {
     /**
      * Checks that the slice can be extracted into a separate method without compilation errors.
      */
-    private boolean canBeExtracted(ASTSlice slice) {
+    public boolean canBeExtracted(ASTSlice slice) {
         SmartList<PsiStatement> statementsToExtract = getStatementsToExtract(slice);
 
         MyExtractMethodProcessor processor = new MyExtractMethodProcessor(scope.getProject(),
@@ -298,6 +300,7 @@ class ExtractMethodPanel extends JPanel {
             return processor.prepare();
 
         } catch (PrepareFailedException e) {
+            log.info("5");
             e.printStackTrace();
         }
         return false;
@@ -353,6 +356,7 @@ class ExtractMethodPanel extends JPanel {
                     }
                 }
             } catch (PrepareFailedException e) {
+                log.info("4");
                 e.printStackTrace();
             }
         };

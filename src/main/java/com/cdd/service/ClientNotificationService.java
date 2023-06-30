@@ -35,7 +35,7 @@ public class ClientNotificationService {
             if(this.notification != null)
                 this.notification.expire();
 
-            this.notification = new Notification("Plugins Suggestion", "<span style='font-size: 12px;'>Cognitive load limit was exceeded</span>", "<strong>Current cognitive load is <span style='color: #BA6F25;'>" + currentComplexity + "</span> and the limit allowed in this project is  <span style='color: #589DF6;'>" + limitOfComplexity + "</span> </strong><br /><strong>It's time to restructure your code.</strong>", NotificationType.ERROR);
+            this.notification = new Notification("Plugins Suggestion", "<span style='font-size: 13px;'>O limite da carga cognitiva foi excedido</span>"+"<br />"+"<span style='color: #BA6F25;'>É hora de refatorar seu código.</span>", "<strong>Carga cognitiva atual é <span style='color: #BA6F25;'>" + currentComplexity + "</span> e o limite permitido nesse projeto é <span style='color: #589DF6;'>" + limitOfComplexity + "</span>. </strong>", NotificationType.ERROR);
 //            var action = new NotificationAction.Simple(() -> "Open rules", (anActionEvent, notification1) -> {
 //            }, "");
 //            this.notification.addAction(action);

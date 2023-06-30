@@ -3,29 +3,27 @@ package com.cdd.service;
 import com.cdd.model.CddMetrics;
 import com.cdd.model.Rule;
 import com.cdd.model.RuleStatementMapper;
-import com.cdd.model.Statement;
+import com.example.demo.utils.RealtimeState;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.intellij.ide.DataManager;
-import com.intellij.openapi.actionSystem.DataConstants;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.DataKeys;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.psi.PsiManager;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.velocity.exception.ResourceNotFoundException;
+import org.ehcache.Cache;
 
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+@Slf4j
 public class CddJsonResourceService implements CddResource {
+
+    private static final String JSON_RESOURCE_CACHE_KEY = "jsonResource";
+    private final Cache<String, Object> cache = CacheManagerService.getCache(JSON_RESOURCE_CACHE_KEY);
 
     @Override
     public Set<Rule> loadMetrics() {
@@ -37,23 +35,35 @@ public class CddJsonResourceService implements CddResource {
     }
 
     private CddMetrics loadJson() {
-        ObjectMapper mapper = new ObjectMapper();
+        Object cached = cache.get(JSON_RESOURCE_CACHE_KEY);
 
-        CddMetrics obj = null;
-        try {
-            obj = mapper.readValue(this.getJson(), CddMetrics.class);
-            obj.setRules(mapperFriendlyLabelsToRules(obj.getRules()));
-        } catch (JsonProcessingException e) {
-            System.out.println("json exception");
-        } catch (Exception e){
-            System.out.println("Exception "+ e);
+        if(ObjectUtils.isNotEmpty(cached)){
+            return (CddMetrics) cached;
         }
 
-        if(ObjectUtils.isEmpty(obj)){
+        ObjectMapper mapper = new ObjectMapper();
+        var metrics = RealtimeState.getInstance().getCddMetrics();
+        if(ObjectUtils.isNotEmpty(metrics)){
+            log.info("metrics for realtime");
+            return metrics;
+        }
+        log.info("metrics for file ");
+
+        CddMetrics cddMetrics = null;
+        try {
+            cddMetrics = mapper.readValue(this.getJson(), CddMetrics.class);
+            cddMetrics.setRules(mapperFriendlyLabelsToRules(cddMetrics.getRules()));
+        } catch (JsonProcessingException e) {
+            log.info("json exception");
+        } catch (Exception e){
+            log.info("Exception "+ e);
+        }
+
+        if(ObjectUtils.isEmpty(cddMetrics)){
             throw new ResourceNotFoundException("resource not found !");
         }
-
-        return obj;
+        cache.put(JSON_RESOURCE_CACHE_KEY, cddMetrics);
+        return cddMetrics;
     }
 
     private Set<Rule> mapperFriendlyLabelsToRules(Set<Rule> rules) {

@@ -1,5 +1,6 @@
 package com.example.demo.toolWindow;
 
+import com.cdd.service.EditorService;
 import com.example.demo.utils.RealtimeLambdaState;
 import com.example.demo.utils.RealtimeState;
 import com.intellij.ide.util.TreeClassChooserFactory;
@@ -9,11 +10,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Arrays;
 
+@Slf4j
 public class MyToolWindow {
 
     public VirtualFile classAnalysed;
@@ -24,6 +27,7 @@ public class MyToolWindow {
     private JButton openRulesButton;
     private JCheckBox limitExceededNotificationCheckBox;
     private JCheckBox showComplexityInTheCodeCheckBox;
+    private JCheckBox showComplexityDescriptionInTheCodeCheckBox;
     private JLabel className;
     private JLabel currentComplexity;
     private JLabel limitOfComplexity;
@@ -54,6 +58,7 @@ public class MyToolWindow {
         this.configureChooseAnotherClassAction(project);
         this.configureOpenRulesAction();
         this.configureShowComplexityInTheCodeAction();
+        this.configureShowComplexityDescriptionInTheCodeAction();
         this.configureLimitExceededNotificationAction();
         this.configureSync();
     }
@@ -61,40 +66,12 @@ public class MyToolWindow {
     private void configureSync() {
 
         this.syncButton.addActionListener(e -> {
-            try {
-                Project project = ProjectManager.getInstance().getOpenProjects()[0];
-                var files = FileEditorManager.getInstance(project).getSelectedFiles();
-                if (files.length >= 1) {
-                    this.classAnalysed = files[0];
-                    this.className.setText(this.classAnalysed.getName());
-                    RealtimeState.getInstance().setFile(files[0]);
-                    files[0].refresh(true, true);
-                    FileEditorManager.getInstance(project).closeFile(files[0]);
-                    FileEditorManager.getInstance(project).openTextEditor(new OpenFileDescriptor(project, files[0]).setUseCurrentWindow(true), false);
-
-//                    PsiFile file = PsiManager.getInstance(project).findFile(files[0]);
-//                    ApplicationManager.getApplication().runWriteAction(()->{
-//                        PsiDocumentManager documentManager = PsiDocumentManager.getInstance(project);
-//                        Document document = documentManager.getDocument(file);
-//                        document.insertString(0, "");
-//                        //FileEditorManager.getInstance(project).getEditors(files[0])[0].getBackgroundHighlighter().getInlayModel(). InlayModel.addBlockElement()
-//                        DataContext dataContext = DataManager.getInstance().getDataContext();
-//                        EditorImpl editor = ObjectUtils.tryCast(dataContext.getData(CommonDataKeys.EDITOR), EditorImpl.class);
-//                        editor.get.getInlayModel()
-//                        Arrays.stream(FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles()).forEach( f -> {
-//                            FileDocumentManager.getInstance().reloadFiles(f);
-//                        });
-//                    });
-
-//                    files[0]
-//                            FileEditorManager.getInstance(project).wr
-                }
-            } catch (Exception ignored) {
-                System.out.println("ee " + ignored);
-            }
+            EditorService.syncFiles();
         });
 
     }
+
+
 
     private void configureOpenRulesAction() {
 
@@ -106,7 +83,16 @@ public class MyToolWindow {
     private void configureShowComplexityInTheCodeAction() {
         this.showComplexityInTheCodeCheckBox.addActionListener(e -> {
             var selected = showComplexityInTheCodeCheckBox.isSelected();
+            showComplexityDescriptionInTheCodeCheckBox.setEnabled(!selected);
             RealtimeState.getInstance().setShowComplexityInTheCode(selected);
+            RealtimeState.getInstance().setShowComplexityDescriptionInTheCode(selected);
+        });
+    }
+
+    private void configureShowComplexityDescriptionInTheCodeAction() {
+        this.showComplexityDescriptionInTheCodeCheckBox.addActionListener(e -> {
+            var selected = showComplexityDescriptionInTheCodeCheckBox.isSelected();
+            RealtimeState.getInstance().setShowComplexityDescriptionInTheCode(selected);
         });
     }
 

@@ -8,25 +8,20 @@ import com.cdd.service.CddJsonResourceService;
 import com.cdd.service.ComplexityMetricsService;
 import com.cdd.utils.ContextualCouplingUtils;
 import com.example.demo.utils.RealtimeState;
-import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
-import com.intellij.codeInsight.daemon.impl.MarkerType;
 import com.intellij.codeInsight.hints.*;
 import com.intellij.codeInsight.hints.presentation.AttributesTransformerPresentation;
 import com.intellij.codeInsight.hints.presentation.InlayPresentation;
-import com.intellij.codeInsight.hints.presentation.MouseButton;
 import com.intellij.codeInsight.hints.presentation.PresentationFactory;
-import com.intellij.codeInsight.navigation.actions.GotoDeclarationAction;
 import com.intellij.icons.AllIcons;
 import com.intellij.lang.Language;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.colors.EditorColors;
-import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.impl.EditorImpl;
-import com.intellij.openapi.editor.markup.EffectType;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.psi.*;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiMethod;
 import com.intellij.ui.JBColor;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
@@ -42,10 +37,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
-import static io.grpc.internal.ConscryptLoader.isPresent;
+import static java.util.Objects.*;
 
 @Slf4j
 public class HintProvider implements InlayHintsProvider<HintSettings> {
@@ -126,12 +123,19 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
 
         //<-------------------- HOVER ------------------->
-        InlayPresentation text = factory.smallText(result.getRegularText() + " ");
 
-        var hovered = factory.changeOnHover(text, () -> {
-            InlayPresentation onHover = factory.smallText(result.getRegularText() + "  :  " + hover + " ");
-            return referenceColor(onHover, highlightColor);
-        }, __ -> true);
+        InlayPresentation hovered;
+        if(RealtimeState.getInstance().isShowComplexityDescriptionInTheCode()){
+            hovered = factory.smallText(result.getRegularText() + "  :  " + hover + " ");
+        } else {
+            InlayPresentation text = factory.smallText(result.getRegularText() + " ");
+            hovered = factory.changeOnHover(text, () -> {
+                InlayPresentation onHover = factory.smallText(result.getRegularText() + "  :  " + hover + " ");
+                return referenceColor(onHover, highlightColor);
+            }, __ -> true);
+        }
+
+
 
 
 
@@ -170,8 +174,9 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
         Set<Rule> rules;
         try {
-            rules = new ComplexityMetricsService().getRules(new CddJsonResourceService().loadMetrics());
+            rules = ComplexityMetricsService.getRules(new CddJsonResourceService().loadMetrics());
         } catch (ResourceNotFoundException exception) {
+            log.info("6");
             return (element, editor1, sink) -> true;
         }
 
@@ -191,8 +196,9 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
             if (!RealtimeState.getInstance().isShowComplexityInTheCode())
                 return true;
 
+            var rule = this.verifyElementType(rules, element);
 
-            if (!this.verifyElementType(rules, element))
+            if (isNull(rule))
                 return true;
 
 
@@ -212,8 +218,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                 @Override
                 public String getRegularText() {
                     String prop = "{0, choice, 1# 1 Complexity|2# {0,number} Complexity}";
-                    return MessageFormat.format(prop, Objects.requireNonNull(rules.stream().filter(
-                            rule -> isInstanceOf(rule, element)).findAny().orElse(null)).getCost());
+                    return MessageFormat.format(prop, Objects.requireNonNull(rule.getCost()));
                 }
             });
 
@@ -250,7 +255,7 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
                     if (i != 0) {
                         presentations[o++] = factory.text(" ");
                     }
-                    presentations[o++] = createPresentation(factory, element, editor1, hint, this.getRuleName(rules, element));
+                    presentations[o++] = createPresentation(factory, element, editor1, hint, rule.getName().toLowerCase());
                 }
                 presentations[o] = factory.textSpacePlaceholder(10, false); // placeholder for "Settings..."
 
@@ -261,16 +266,16 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
 
 //                <----------------- HOVER -------------------->
-//                InlayPresentation withAppearingSettings = factory.changeOnHover(seq, () -> {
-//                    InlayPresentation[] trimmedSpace = Arrays.copyOf(presentations, presentations.length - 1);
-//                    InlayPresentation[] spaceAndSettings = {factory.textSpacePlaceholder(1, false), factory.icon(icon)};
-//                    InlayPresentation[] withSettings = ArrayUtil.mergeArrays(trimmedSpace, spaceAndSettings);
-//                    return factory.seq(withSettings);
-//                }, e -> true);
-//
-//                sink.addBlockElement(lineStart, true, true, 0, withAppearingSettings);
+                InlayPresentation withAppearingSettings = factory.changeOnHover(seq, () -> {
+                    InlayPresentation[] trimmedSpace = Arrays.copyOf(presentations, presentations.length - 1);
+                    InlayPresentation[] spaceAndSettings = {factory.textSpacePlaceholder(1, false), factory.icon(icon)};
+                    InlayPresentation[] withSettings = ArrayUtil.mergeArrays(trimmedSpace, spaceAndSettings);
+                    return factory.seq(withSettings);
+                }, e -> true);
 
-                sink.addBlockElement(lineStart, true, true, 0, seq);
+                sink.addBlockElement(lineStart, true, true, 0, withAppearingSettings);
+
+//                sink.addBlockElement(lineStart, true, true, 0, seq);
             }
             return true;
         };
@@ -283,15 +288,15 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
         return language.getID().equals("JAVA");
     }
 
-    private boolean verifyElementType(Set<Rule> rules, Object element) {
-        return rules.stream().anyMatch(rule -> this.isInstanceOf(rule, element));
+    private Rule verifyElementType(Set<Rule> rules, Object element) {
+        return rules.stream().parallel().filter(rule -> this.isInstanceOf(rule, element)).findFirst().orElse(null);
     }
 
     private boolean isInstanceOf(Rule rule, Object element) {
         final var psiElement = (PsiElement) element;
 
         if(rule.getObject() instanceof List<?> && Statement.CONTEXTUAL_COUPLING.name().equals(rule.getName())) {
-          return  ((List<?>) rule.getObject()).stream().anyMatch(object -> {
+          return  ((List<?>) rule.getObject()).stream().parallel().anyMatch(object -> {
 
               final var isInstanceToAnalyze = ((Class) object).isInstance(element);
 
@@ -304,12 +309,24 @@ public class HintProvider implements InlayHintsProvider<HintSettings> {
 
         if(Statement.FEATURE_ENVY.name().equals(rule.getName())) {
             try{
-                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().refactorings) && psiElement instanceof PsiMethod) {
-                    return CodeSmellIntegrationUtil.getInstance().refactorings
-                            .stream().anyMatch(refactoring -> refactoring.getMethod().equals(psiElement));
+                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().featureEnvyRefactorings) && psiElement instanceof PsiMethod) {
+                    return CodeSmellIntegrationUtil.getInstance().featureEnvyRefactorings
+                            .stream().parallel().anyMatch(refactoring -> refactoring.getMethod().equals(psiElement));
                 }
             }catch (NoClassDefFoundError ignored){
              log.info("HintProvider instanceOf feature envy not ready");
+            }
+            return false;
+        }
+
+        if(Statement.LONG_METHOD.name().equals(rule.getName())) {
+            try{
+                if (ObjectUtils.isNotEmpty(CodeSmellIntegrationUtil.getInstance().longMethodRefactorings) && psiElement instanceof PsiMethod) {
+                    return CodeSmellIntegrationUtil.getInstance().longMethodRefactorings
+                            .stream().parallel().anyMatch(refactoring -> refactoring.stream().anyMatch(r -> r.getSourceMethodDeclaration().equals(psiElement)));
+                }
+            }catch (NoClassDefFoundError ignored){
+                log.info("HintProvider instanceOf long method not ready");
             }
             return false;
         }

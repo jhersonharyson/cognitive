@@ -98,8 +98,15 @@ public class RuleStatementMapper {
 
                 ParameterToRuleStatement
                         .builder()
-                        .listOfParameters(List.of("FEATURE_ENVY", "feature_envy", "CODE_SMELL", "code_smell"))
+                        .listOfParameters(List.of("FEATURE_ENVY", "feature_envy"))
                         .statement(Statement.FEATURE_ENVY)
+                        .build(),
+
+
+                ParameterToRuleStatement
+                        .builder()
+                        .listOfParameters(List.of("LONG_METHOD", "long_method"))
+                        .statement(Statement.LONG_METHOD)
                         .build()
 
         ));

@@ -1,9 +1,7 @@
 package com.example.demo.utils;
 
 
-import com.cdd.integrations.code.smell.jdeodorant.core.distance.ProjectInfo;
-import com.cdd.integrations.code.smell.jdeodorant.ide.ui.AbstractRefactoringPanel;
-import com.cdd.integrations.code.smell.jdeodorant.utils.PsiUtils;
+import com.cdd.model.CddMetrics;
 import com.cdd.service.AnalyzerService;
 import com.cdd.service.ClientNotificationService;
 import com.cdd.utils.Debouncer;
@@ -13,8 +11,6 @@ import com.intellij.notification.NotificationGroup;
 import com.intellij.openapi.actionSystem.DataConstants;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.command.impl.DummyProject;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
@@ -23,9 +19,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.impl.file.impl.FileManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +42,10 @@ public class RealtimeState {
     private int lastComplexity = -1;
     private int limitOfComplexity = 0;
     private boolean showComplexityInTheCode = true;
+    private boolean showComplexityDescriptionInTheCode = true;
     private boolean limitExceededNotification = true;
+
+    private CddMetrics cddMetrics;
 
     private Debouncer<String> debouncer;
     private int DEBOUNCE_INTERVAL = 3_000;
@@ -158,9 +155,18 @@ public class RealtimeState {
     public boolean isShowComplexityInTheCode() {
         return showComplexityInTheCode;
     }
+    public boolean isShowComplexityDescriptionInTheCode() {
+        return showComplexityDescriptionInTheCode;
+    }
 
     public void setShowComplexityInTheCode(boolean showComplexityInTheCode) {
         this.showComplexityInTheCode = showComplexityInTheCode;
+        Arrays.stream(FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles()).forEach( f -> {
+            FileDocumentManager.getInstance().reloadFiles(f);
+        });
+    }
+    public void setShowComplexityDescriptionInTheCode(boolean showComplexityDescriptionInTheCode) {
+        this.showComplexityDescriptionInTheCode = showComplexityDescriptionInTheCode;
         Arrays.stream(FileEditorManager.getInstance(ProjectManager.getInstance().getOpenProjects()[0]).getSelectedFiles()).forEach( f -> {
             FileDocumentManager.getInstance().reloadFiles(f);
         });
@@ -172,5 +178,13 @@ public class RealtimeState {
 
     public void setLimitExceededNotification(boolean limitExceededNotification) {
         this.limitExceededNotification = limitExceededNotification;
+    }
+
+    public void setCddMetrics(CddMetrics cddMetrics){
+        this.cddMetrics = cddMetrics;
+    }
+
+    public CddMetrics getCddMetrics(){
+        return cddMetrics;
     }
 }

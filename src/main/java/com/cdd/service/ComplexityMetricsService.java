@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 public class ComplexityMetricsService {
 
-    public Set<Rule> getRules(Set<Rule> rules) {
+    public static Set<Rule> getRules(Set<Rule> rules) {
         Set<Rule> listOfRules = new HashSet<>();
 
         rules.forEach(r -> {
@@ -71,6 +71,8 @@ public class ComplexityMetricsService {
                 //rule.setObject(Arrays.asList(PsiTypeElement.class, PsiParameter.class, PsiTypeCastExpression.class, PsiDeclarationStatement.class));
                 rule.setObject(Arrays.asList(PsiImportStatement.class, PsiImportStaticStatement.class)) ;
             } else if (Statement.FEATURE_ENVY.name().equals(r.getName())) {
+                rule.setObject(PsiMethod.class);
+            } else if (Statement.LONG_METHOD.name().equals(r.getName())) {
                 rule.setObject(PsiMethod.class);
             }
 
@@ -148,6 +150,10 @@ public class ComplexityMetricsService {
             }
 
             else if (Statement.FEATURE_ENVY.name().equals(rule.getName())) {
+                statements.add(PsiMethod.class);
+            }
+
+            else if (Statement.LONG_METHOD.name().equals(rule.getName())) {
                 statements.add(PsiMethod.class);
             }
         });
